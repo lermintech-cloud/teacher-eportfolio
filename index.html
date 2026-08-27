@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Teacher E-Portfolio & Document Hub ของครูเฉลิมพล จันทร์แดง" />
+    <title>Teacher E-Portfolio | ครูเฉลิมพล จันทร์แดง</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ['Prompt', 'sans-serif'] },
+            colors: { brand: { 50: '#f5f0ff', 100: '#eadfff', 500: '#9873dd', 600: '#8056ce', 700: '#6840ae', 900: '#3e266c' } },
+            boxShadow: { soft: '0 14px 34px rgba(122, 84, 188, .12)' }
+          }
+        }
+      };
+    </script>
+    <style>
+      [x-cloak] { display: none; }
+      body { background: radial-gradient(circle at 5% 5%, #fff6d9 0, transparent 20rem), radial-gradient(circle at 95% 10%, #e6f7ff 0, transparent 23rem), #faf9ff; }
+      .nav-item { transition: background-color .18s ease, color .18s ease, transform .18s ease; }
+      .nav-item:hover { transform: translateX(2px); }
+      .sidebar .nav-item { color: #cbd5e1 !important; }
+      .sidebar .nav-item:hover { background: rgba(255,255,255,.10); color: #ffffff !important; }
+      .sidebar .nav-item.active { background: linear-gradient(90deg, #8b5cf6, #c026d3); color: #ffffff !important; font-weight: 600; box-shadow: 0 8px 18px rgba(139, 92, 246, .28); }
+      .sidebar { transition: transform .25s ease, width .25s ease; }
+      .skeleton { background: linear-gradient(90deg, #e8eef2 25%, #f5f7f8 37%, #e8eef2 63%); background-size: 400% 100%; animation: shine 1.4s ease infinite; }
+      @keyframes shine { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+      @media (min-width: 1024px) { body.sidebar-collapsed .sidebar { width: 5.25rem; } body.sidebar-collapsed main { margin-left: 5.25rem; } body.sidebar-collapsed .sidebar-label, body.sidebar-collapsed .sidebar-heading, body.sidebar-collapsed .sidebar-profile { display: none; } body.sidebar-collapsed .nav-item { justify-content: center; padding-left: .75rem; padding-right: .75rem; } }
+    </style>
+  </head>
+  <body class="bg-slate-50 font-sans text-slate-700 antialiased">
+    <div id="app" class="min-h-screen">
+      <!-- Mobile overlay is toggled by app.js. -->
+      <div id="sidebar-overlay" class="fixed inset-0 z-30 hidden bg-slate-950/40 lg:hidden"></div>
+      <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 z-40 flex w-72 -translate-x-full flex-col border-r border-violet-950 bg-slate-950 lg:translate-x-0">
+        <div class="flex h-20 items-center gap-3 border-b border-white/10 px-5">
+          <div id="brand-initial" class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-lg font-bold text-white shadow-lg shadow-violet-300/50">ช</div>
+          <div class="sidebar-label min-w-0">
+            <p class="truncate text-sm font-semibold text-white">Teacher E-Portfolio</p>
+            <p id="sidebar-school" class="truncate text-xs text-slate-400">โรงเรียนบ้านไร่</p>
+          </div>
+          <button id="collapse-button" class="ml-auto hidden rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white lg:block" aria-label="ย่อเมนู"><span class="text-lg">‹</span></button>
+          <button id="close-menu-button" class="ml-auto rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white lg:hidden" aria-label="ปิดเมนู">×</button>
+        </div>
+        <nav id="navigation" class="flex-1 overflow-y-auto px-3 py-5" aria-label="เมนูหลัก"></nav>
+        <div class="sidebar-profile m-3 rounded-2xl border border-white/10 bg-gradient-to-br from-violet-600/40 to-fuchsia-600/25 p-4">
+          <p class="text-xs font-medium text-violet-200">Teacher Workspace</p>
+          <p id="sidebar-name" class="mt-1 text-sm font-semibold text-white">ครูเฉลิมพล จันทร์แดง</p>
+          <p id="sidebar-profile-school" class="mt-1 text-xs text-slate-300">โรงเรียนบ้านไร่</p>
+        </div>
+      </aside>
+      <main class="min-h-screen transition-all lg:ml-72">
+        <header class="sticky top-0 z-20 flex h-20 items-center gap-4 border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6 lg:px-8">
+          <button id="menu-button" class="grid h-10 w-10 place-items-center rounded-xl text-slate-600 hover:bg-slate-100 lg:hidden" aria-label="เปิดเมนู">
+            <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
+          <div class="min-w-0 flex-1"><p class="text-xs font-medium text-brand-600">Teacher Workspace</p><h1 id="page-title" class="truncate text-lg font-semibold text-slate-800">แดชบอร์ด</h1></div>
+          <button id="refresh-data-button" class="grid h-10 w-10 place-items-center rounded-xl bg-sky-50 text-sky-700 hover:bg-sky-100" aria-label="รีเฟรชข้อมูลล่าสุด" title="รีเฟรชข้อมูลล่าสุด">↻</button>
+          <button id="view-mode-button" class="hidden items-center gap-2 rounded-xl bg-violet-50 px-3 py-2 text-xs font-medium text-violet-700 hover:bg-violet-100 sm:flex" aria-label="เปลี่ยนมุมมองเว็บไซต์"><span>◉</span><span id="view-mode-label">ผู้ดูแลระบบ</span></button>
+          <div class="hidden items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700 md:flex"><span class="h-2 w-2 rounded-full bg-emerald-500"></span><span id="data-status">พร้อมใช้งาน</span></div>
+        </header>
+        <div id="content" class="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8" aria-live="polite"></div>
+      </main>
+    </div>
+    <div id="toast-container" class="fixed right-4 top-4 z-50 space-y-3" aria-live="assertive"></div>
+    <script src="mockData.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
