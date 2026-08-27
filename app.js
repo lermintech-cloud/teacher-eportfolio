@@ -6,8 +6,8 @@ const CONFIG = {
   CACHE_MAX_AGE_MS: 10 * 60 * 1000
 };
 
-const VIEW_MODE_KEY = 'teacher-eportfolio-view-mode';
-const state = { data: { portfolio: [], documents: [], settings: {}, schedule: [], workload: [], specialTasks: [] }, route: 'dashboard', portfolioFilter: 'ทั้งหมด', documentSearch: '', documentFilter: 'ทั้งหมด', viewMode: getViewMode() };
+const ADMIN_SESSION_KEY = 'teacher-eportfolio-admin-session';
+const state = { data: { portfolio: [], documents: [], settings: {}, schedule: [], workload: [], specialTasks: [] }, route: 'dashboard', portfolioFilter: 'ทั้งหมด', documentSearch: '', documentFilter: 'ทั้งหมด', adminSession: getAdminSession(), adminSheet: 'Portfolio', adminEditKey: null };
 const icons = {
   grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
   user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 3.5-6 8-6s7.2 2 8 6"/></svg>',
@@ -26,6 +26,13 @@ const navGroups = [
 const routeMeta = {
   dashboard: ['แดชบอร์ด', 'ภาพรวมแฟ้มสะสมผลงานและเอกสาร'], profile: ['ประวัติส่วนตัว', 'ข้อมูลของครูเฉลิมพล จันทร์แดง'], teaching: ['ข้อมูลการสอน', 'รายวิชาและภาระงานสอน'], schedule: ['ตารางสอน', 'ตารางสอนประจำสัปดาห์'], workload: ['ภาระงานหลัก', 'ภาระงานและบทบาทที่รับผิดชอบ'], 'special-tasks': ['งานพิเศษ', 'งานสนับสนุนและงานที่ได้รับมอบหมาย'], portfolio: ['E-Portfolio', 'รวมผลงาน กิจกรรม และความภาคภูมิใจ'], academic: ['งานวิชาการ', 'เอกสารวิชาการ'], orders: ['คำสั่งโรงเรียน', 'คำสั่งและหนังสือมอบหมายงาน'], forms: ['แบบฟอร์มทั่วไป', 'แบบฟอร์มสำหรับใช้งาน'], settings: ['ตั้งค่า', 'กำหนดรูปแบบการแสดงผลของเว็บไซต์']
 };
+const ADMIN_SCHEMAS = {
+  Portfolio: ['ID', 'Title', 'Category', 'Description', 'Image_URL', 'Date'],
+  Documents: ['ID', 'Doc_Name', 'Category', 'Recipient', 'File_URL', 'Date'],
+  Schedule: ['ID', 'Day', 'Period', 'Subject', 'Class', 'Room'],
+  Workload: ['ID', 'Title', 'Description', 'Type'],
+  SpecialTasks: ['ID', 'Title', 'Description', 'Accent']
+};
 
 const $ = (selector) => document.querySelector(selector);
 const escapeHtml = (text = '') => String(text).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
@@ -36,10 +43,32 @@ function normalizeData(data) { return { portfolio: Array.isArray(data?.portfolio
 function setting(key) { return state.data.settings?.[key] || DEFAULT_SETTINGS[key] || ''; }
 function subjects() { return setting('subjects').split('|').map(subject => subject.trim()).filter(Boolean); }
 function applySiteSettings() { const name = setting('teacher_name'), school = setting('school_name'); document.title = `Teacher E-Portfolio | ${name}`; $('#brand-initial').textContent = setting('teacher_initial'); $('#sidebar-name').textContent = name; $('#sidebar-school').textContent = school; $('#sidebar-profile-school').textContent = school; }
-function getViewMode() { try { return localStorage.getItem(VIEW_MODE_KEY) === 'admin' ? 'admin' : 'public'; } catch { return 'public'; } }
-function isAdmin() { return state.viewMode === 'admin'; }
-function setViewMode(mode) { state.viewMode = mode === 'public' ? 'public' : 'admin'; try { localStorage.setItem(VIEW_MODE_KEY, state.viewMode); } catch { /* localStorage is optional */ } if (!isAdmin() && ['academic', 'orders', 'forms', 'settings'].includes(state.route)) state.route = 'dashboard'; syncViewModeUI(); renderNavigation(); renderPage(); showToast(`เปลี่ยนเป็นมุมมอง${isAdmin() ? 'ผู้ดูแลระบบ' : 'บุคคลทั่วไป'}แล้ว`, 'success'); }
-function syncViewModeUI() { const label = $('#view-mode-label'); if (label) label.textContent = isAdmin() ? 'ผู้ดูแลระบบ' : 'บุคคลทั่วไป'; }
+function getAdminSession() { try { return localStorage.getItem(ADMIN_SESSION_KEY) || ''; } catch { return ''; } }
+function isAdmin() { return Boolean(state.adminSession); }
+function syncAdminUI() { const label = $('#admin-access-label'); const button = $('#admin-access-button'); if (!label || !button) return; label.textContent = isAdmin() ? 'ออกจากระบบ Admin' : 'เข้าสู่ระบบ Admin'; button.setAttribute('aria-label', label.textContent); }
+function showAdminLogin() { $('#admin-login-error').classList.add('hidden'); $('#admin-login-form').reset(); $('#admin-login-modal').classList.remove('hidden'); $('#admin-login-modal').classList.add('flex'); setTimeout(() => $('#admin-password').focus(), 0); }
+function closeAdminLogin() { $('#admin-login-modal').classList.add('hidden'); $('#admin-login-modal').classList.remove('flex'); }
+async function adminRequest(action, payload = {}) {
+  if (CONFIG.USE_MOCK_DATA) throw new Error('Admin CMS ต้องเชื่อม Google Apps Script API จริงก่อนใช้งาน');
+  if (!CONFIG.API_URL || CONFIG.API_URL.includes('PASTE_YOUR')) throw new Error('กรุณาตั้งค่า API_URL ก่อนใช้งาน Admin');
+  const response = await fetch(CONFIG.API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, token: state.adminSession, ...payload }), redirect: 'follow' });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const result = await response.json();
+  if (!result || result.status !== 'success') throw new Error(result?.message || 'บันทึกข้อมูลไม่สำเร็จ');
+  return result;
+}
+async function loginAdmin(password) {
+  const result = await adminRequest('login', { password });
+  state.adminSession = result.token;
+  try { localStorage.setItem(ADMIN_SESSION_KEY, result.token); } catch { /* localStorage is optional */ }
+  closeAdminLogin(); syncAdminUI(); renderNavigation(); setRoute('settings'); showToast('เข้าสู่ระบบ Admin สำเร็จ', 'success');
+}
+async function logoutAdmin() {
+  try { await adminRequest('logout'); } catch { /* session may already be expired */ }
+  state.adminSession = '';
+  try { localStorage.removeItem(ADMIN_SESSION_KEY); } catch { /* localStorage is optional */ }
+  state.route = 'dashboard'; syncAdminUI(); renderNavigation(); renderPage(); showToast('ออกจากระบบ Admin แล้ว', 'success');
+}
 
 function renderNavigation() {
   $('#navigation').innerHTML = navGroups.filter(group => !group.adminOnly || isAdmin()).map(group => `
@@ -65,7 +94,7 @@ function renderPage() {
   const [title, subtitle] = routeMeta[state.route] || routeMeta.dashboard;
   $('#page-title').textContent = title;
   applySiteSettings();
-  syncViewModeUI();
+  syncAdminUI();
   const views = { dashboard: renderLiveDashboard, profile: renderLiveProfile, teaching: renderLiveTeaching, schedule: renderLiveSchedule, workload: renderLiveWorkload, 'special-tasks': renderLiveSpecialTasks, portfolio: renderPortfolio, academic: renderDocuments, orders: renderDocuments, forms: renderDocuments, settings: renderLiveSettings };
   $('#content').innerHTML = views[state.route]();
   bindPageEvents();
@@ -151,9 +180,24 @@ function renderLiveSpecialTasks() {
   return `<section><div class="rounded-3xl bg-gradient-to-br from-amber-50 via-rose-50 to-violet-50 p-6 sm:p-8"><p class="text-sm font-medium text-violet-700">งานที่ได้รับมอบหมาย</p><h2 class="mt-1 text-2xl font-semibold text-slate-800">งานพิเศษและงานสนับสนุน</h2><p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500">เพิ่ม แก้ไข หรือลบรายการได้ที่ชีต <strong>SpecialTasks</strong></p><div class="mt-6 grid gap-4 md:grid-cols-3">${state.data.specialTasks.length ? state.data.specialTasks.map((task, index) => `<article class="rounded-2xl bg-white/90 p-5 shadow-sm"><span class="grid h-10 w-10 place-items-center rounded-xl ${colors[task.Accent] || colors.violet}">${['✦','⌘','⚖'][index % 3]}</span><h3 class="mt-4 font-semibold text-slate-800">${escapeHtml(task.Title)}</h3><p class="mt-2 text-sm leading-6 text-slate-500">${escapeHtml(task.Description)}</p></article>`).join('') : emptyState('ยังไม่มีข้อมูลงานพิเศษ กรุณาเพิ่มในชีต SpecialTasks', 'md:col-span-3')}</div></div></section>`;
 }
 
+function adminRows(sheet) {
+  const dataKeys = { Portfolio: 'portfolio', Documents: 'documents', Schedule: 'schedule', Workload: 'workload', SpecialTasks: 'specialTasks' };
+  return state.data[dataKeys[sheet]] || [];
+}
+function fieldLabel(field) { return ({ ID: 'รหัส', Title: 'ชื่อผลงาน', Doc_Name: 'ชื่อเอกสาร', Category: 'หมวดหมู่', Description: 'รายละเอียด', Image_URL: 'ลิงก์รูปภาพ', Date: 'วันที่', Recipient: 'ผู้รับผิดชอบ', File_URL: 'ลิงก์เอกสาร', Day: 'วัน', Period: 'คาบ', Subject: 'รายวิชา', Class: 'ชั้น/ห้อง', Room: 'ห้องเรียน', Type: 'ประเภทงาน', Accent: 'สีการ์ด' })[field] || field; }
+function renderRecordEditor(sheet, record) {
+  const fields = ADMIN_SCHEMAS[sheet];
+  return `<form id="admin-record-form" class="mt-6 rounded-2xl border border-violet-100 bg-violet-50/60 p-5"><div class="flex items-center justify-between gap-3"><div><h3 class="font-semibold text-slate-800">${record ? 'แก้ไขรายการ' : 'เพิ่มรายการใหม่'} · ${sheet}</h3><p class="mt-1 text-xs text-slate-500">กรอกข้อมูลแล้วกดบันทึก ระบบจะเขียนลง Google Sheets โดยตรง</p></div><button type="button" data-admin-cancel class="rounded-lg px-3 py-2 text-sm text-slate-500 hover:bg-white">ยกเลิก</button></div><div class="mt-5 grid gap-4 sm:grid-cols-2">${fields.map(field => `<label class="block ${field === 'Description' ? 'sm:col-span-2' : ''}"><span class="mb-1.5 block text-sm font-medium text-slate-700">${fieldLabel(field)}</span>${field === 'Description' ? `<textarea name="${field}" rows="3" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100">${escapeHtml(record?.[field] || '')}</textarea>` : `<input name="${field}" value="${escapeHtml(record?.[field] || '')}" ${field === 'ID' && record ? 'readonly' : ''} class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 ${field === 'ID' && record ? 'text-slate-400' : ''}" />`}</label>`).join('')}</div><input type="hidden" name="sheet" value="${sheet}" /><button class="mt-5 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700">บันทึกข้อมูล</button></form>`;
+}
+function renderAdminTable(sheet) {
+  const rows = adminRows(sheet); const fields = ADMIN_SCHEMAS[sheet];
+  const record = state.adminEditKey ? rows.find(row => row.ID === state.adminEditKey) : null;
+  return `<div class="mt-6 rounded-2xl border border-slate-200 bg-white"><div class="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between"><div><h3 class="font-semibold text-slate-800">จัดการ ${sheet}</h3><p class="mt-1 text-sm text-slate-500">${rows.length} รายการ</p></div><button data-admin-add class="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700">+ เพิ่มรายการ</button></div><div class="overflow-x-auto"><table class="min-w-[760px] w-full text-left text-sm"><thead class="bg-slate-50 text-xs text-slate-500"><tr>${fields.slice(0, 4).map(field => `<th class="px-4 py-3 font-medium">${fieldLabel(field)}</th>`).join('')}<th class="px-4 py-3 text-right font-medium">จัดการ</th></tr></thead><tbody>${rows.length ? rows.map(row => `<tr class="border-t border-slate-100"><td class="px-4 py-3 text-slate-400">${escapeHtml(row.ID)}</td>${fields.slice(1, 4).map(field => `<td class="max-w-[260px] truncate px-4 py-3 text-slate-600">${escapeHtml(row[field])}</td>`).join('')}<td class="whitespace-nowrap px-4 py-3 text-right"><button data-admin-edit="${escapeHtml(row.ID)}" class="rounded-lg px-2.5 py-1.5 text-violet-700 hover:bg-violet-50">แก้ไข</button><button data-admin-delete="${escapeHtml(row.ID)}" class="rounded-lg px-2.5 py-1.5 text-rose-600 hover:bg-rose-50">ลบ</button></td></tr>`).join('') : `<tr><td colspan="5" class="px-5 py-10 text-center text-slate-400">ยังไม่มีรายการ</td></tr>`}</tbody></table></div></div>${state.adminEditKey !== null ? renderRecordEditor(sheet, record) : ''}`;
+}
 function renderLiveSettings() {
-  const siteSettings = [['ชื่อครู', 'teacher_name'], ['สถานศึกษา', 'school_name'], ['ตำแหน่ง', 'teacher_role'], ['อักษรย่อ', 'teacher_initial'], ['คำเกริ่นนำ', 'teacher_bio'], ['รายวิชา', 'subjects']];
-  return `<section class="max-w-4xl"><div class="rounded-3xl border border-violet-100 bg-white p-6 shadow-soft sm:p-8"><div class="flex items-start gap-4"><div class="grid h-12 w-12 place-items-center rounded-2xl bg-violet-100 text-violet-700">${icons.settings}</div><div><h2 class="font-semibold text-slate-800">ศูนย์ควบคุมเว็บไซต์</h2><p class="mt-1 text-sm leading-6 text-slate-500">ข้อมูลจริงของเว็บไซต์จัดการจาก Google Sheets เพื่อให้แก้ได้จากทุกอุปกรณ์ที่มีสิทธิ์เข้าถึง</p></div></div><div class="mt-6 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-emerald-800">ผู้ดูแล: เปิด Spreadsheet ฐานข้อมูล แล้วแก้ไขชีต <strong>Settings, Portfolio, Documents, Schedule, Workload</strong> หรือ <strong>SpecialTasks</strong> โดยตรง ข้อมูลจะถูกเก็บบน Google และเว็บไซต์จะอ่านข้อมูลล่าสุดผ่าน GAS</div><dl class="mt-6 grid gap-3 sm:grid-cols-2">${siteSettings.map(([label, key]) => `<div class="rounded-xl bg-slate-50 p-4"><dt class="text-xs text-slate-400">${label} · Settings/${key}</dt><dd class="mt-1 break-words text-sm font-medium text-slate-700">${escapeHtml(setting(key))}</dd></div>`).join('')}</dl><div class="mt-7 grid gap-4 sm:grid-cols-2"><button class="rounded-2xl border-2 p-5 text-left transition ${state.viewMode === 'public' ? 'border-sky-400 bg-sky-50 shadow-sm' : 'border-slate-100 hover:border-sky-200'}" data-view-mode="public"><h3 class="font-semibold text-slate-800">มุมมองบุคคลทั่วไป</h3><p class="mt-2 text-sm text-slate-500">ซ่อน Document Hub และหน้า Settings จากเมนูของเบราว์เซอร์นี้</p></button><button class="rounded-2xl border-2 p-5 text-left transition ${state.viewMode === 'admin' ? 'border-violet-400 bg-violet-50 shadow-sm' : 'border-slate-100 hover:border-violet-200'}" data-view-mode="admin"><h3 class="font-semibold text-slate-800">มุมมองผู้ดูแลระบบ</h3><p class="mt-2 text-sm text-slate-500">แสดงเมนูทั้งหมดสำหรับตรวจสอบหน้าเว็บ</p></button></div></div></section>`;
+  const siteSettings = [['ชื่อครู', 'teacher_name'], ['สถานศึกษา', 'school_name'], ['ตำแหน่ง', 'teacher_role'], ['อักษรย่อ', 'teacher_initial'], ['คำเกริ่นนำ', 'teacher_bio'], ['รายวิชา (คั่นด้วย |)', 'subjects']];
+  const sheets = Object.keys(ADMIN_SCHEMAS);
+  return `<section class="max-w-6xl"><div class="rounded-3xl border border-violet-100 bg-white p-6 shadow-soft sm:p-8"><div class="flex items-start gap-4"><div class="grid h-12 w-12 place-items-center rounded-2xl bg-violet-100 text-violet-700">${icons.settings}</div><div><h2 class="font-semibold text-slate-800">ศูนย์ควบคุมเว็บไซต์</h2><p class="mt-1 text-sm leading-6 text-slate-500">แก้ไขข้อมูลเว็บไซต์จากหน้านี้ แล้วบันทึกลง Google Sheets ได้ทันที</p></div></div><form id="site-settings-form" class="mt-6 grid gap-4 sm:grid-cols-2">${siteSettings.map(([label, key]) => `<label class="block ${key === 'teacher_bio' || key === 'subjects' ? 'sm:col-span-2' : ''}"><span class="mb-1.5 block text-sm font-medium text-slate-700">${label}</span>${key === 'teacher_bio' ? `<textarea name="${key}" rows="2" class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100">${escapeHtml(setting(key))}</textarea>` : `<input name="${key}" value="${escapeHtml(setting(key))}" class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100" />`}</label>`).join('')}<div class="sm:col-span-2"><button class="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700">บันทึกการตั้งค่าเว็บไซต์</button></div></form></div><div class="mt-7 rounded-3xl border border-violet-100 bg-white p-6 shadow-soft"><div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><div><h2 class="font-semibold text-slate-800">จัดการข้อมูล</h2><p class="mt-1 text-sm text-slate-500">เพิ่ม แก้ไข หรือลบข้อมูลในฐานข้อมูล</p></div><div class="flex flex-wrap gap-2">${sheets.map(sheet => `<button data-admin-sheet="${sheet}" class="rounded-full px-3 py-2 text-sm ${sheet === state.adminSheet ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-violet-50'}">${sheet}</button>`).join('')}</div></div>${renderAdminTable(state.adminSheet)}</div></section>`;
 }
 function renderPortfolio() {
   const categories = ['ทั้งหมด', 'ผลงาน/นวัตกรรม', 'กิจกรรมพัฒนาผู้เรียน', 'ผลงานนักเรียน', 'เกียรติบัตรและรางวัล'];
@@ -190,18 +234,44 @@ function bindPageEvents() {
   document.querySelectorAll('[data-go]').forEach(button => button.addEventListener('click', () => setRoute(button.dataset.go)));
   const search = $('#document-search'); if (search) search.addEventListener('input', event => { state.documentSearch = event.target.value; const position = event.target.selectionStart; $('#content').innerHTML = renderDocuments(); bindPageEvents(); $('#document-search').focus(); $('#document-search').setSelectionRange(position, position); });
   const filter = $('#document-filter'); if (filter) filter.addEventListener('change', event => { state.documentFilter = event.target.value; renderPage(); });
-  document.querySelectorAll('[data-view-mode]').forEach(button => button.addEventListener('click', () => setViewMode(button.dataset.viewMode)));
+  document.querySelectorAll('[data-admin-sheet]').forEach(button => button.addEventListener('click', () => { state.adminSheet = button.dataset.adminSheet; state.adminEditKey = null; renderPage(); }));
+  document.querySelectorAll('[data-admin-add]').forEach(button => button.addEventListener('click', () => { state.adminEditKey = ''; renderPage(); }));
+  document.querySelectorAll('[data-admin-cancel]').forEach(button => button.addEventListener('click', () => { state.adminEditKey = null; renderPage(); }));
+  document.querySelectorAll('[data-admin-edit]').forEach(button => button.addEventListener('click', () => { state.adminEditKey = button.dataset.adminEdit; renderPage(); }));
+  document.querySelectorAll('[data-admin-delete]').forEach(button => button.addEventListener('click', async () => {
+    if (!window.confirm('ต้องการลบรายการนี้ใช่หรือไม่? การลบจะมีผลกับ Google Sheets ทันที')) return;
+    try { await adminRequest('deleteRecord', { sheet: state.adminSheet, key: button.dataset.adminDelete }); state.adminEditKey = null; await fetchData(true); showToast('ลบรายการเรียบร้อย', 'success'); }
+    catch (error) { showToast(error.message); }
+  }));
+  const recordForm = $('#admin-record-form'); if (recordForm) recordForm.addEventListener('submit', async event => {
+    event.preventDefault(); const formData = new FormData(recordForm); const record = Object.fromEntries(formData.entries());
+    try { await adminRequest('saveRecord', { sheet: record.sheet, record }); state.adminEditKey = null; await fetchData(true); showToast('บันทึกรายการเรียบร้อย', 'success'); }
+    catch (error) { showToast(error.message); }
+  });
+  const settingsForm = $('#site-settings-form'); if (settingsForm) settingsForm.addEventListener('submit', async event => {
+    event.preventDefault(); const formData = new FormData(settingsForm); const records = [...formData.entries()].map(([Key, Value]) => ({ Key, Value }));
+    try { await adminRequest('saveSettings', { records }); await fetchData(true); showToast('บันทึกการตั้งค่าเว็บไซต์เรียบร้อย', 'success'); }
+    catch (error) { showToast(error.message); }
+  });
 }
 function openMenu() { $('#sidebar').classList.remove('-translate-x-full'); $('#sidebar-overlay').classList.remove('hidden'); }
 function closeMenu() { $('#sidebar').classList.add('-translate-x-full'); $('#sidebar-overlay').classList.add('hidden'); }
 function init() {
   const hashRoute = window.location.hash.slice(1); if (routeMeta[hashRoute]) state.route = hashRoute;
   if (!isAdmin() && ['academic', 'orders', 'forms', 'settings'].includes(state.route)) state.route = 'dashboard';
-  renderNavigation(); syncViewModeUI(); $('#navigation').addEventListener('click', event => { const button = event.target.closest('[data-route]'); if (button) setRoute(button.dataset.route, button.dataset.label); });
+  renderNavigation(); syncAdminUI(); $('#navigation').addEventListener('click', event => { const button = event.target.closest('[data-route]'); if (button) setRoute(button.dataset.route, button.dataset.label); });
   $('#menu-button').addEventListener('click', openMenu); $('#close-menu-button').addEventListener('click', closeMenu); $('#sidebar-overlay').addEventListener('click', closeMenu);
   $('#refresh-data-button').addEventListener('click', () => { fetchData(true); showToast('กำลังดึงข้อมูลล่าสุดจากฐานข้อมูล', 'success'); });
-  // ปุ่มบน Header ใช้สลับมุมมองได้รวดเร็ว ส่วนการตั้งค่าแบบละเอียดอยู่ในเมนู Settings ของ Admin
-  $('#view-mode-button').addEventListener('click', () => setViewMode(isAdmin() ? 'public' : 'admin'));
+  $('#admin-access-button').addEventListener('click', () => { if (isAdmin()) logoutAdmin(); else showAdminLogin(); });
+  $('#close-admin-login').addEventListener('click', closeAdminLogin);
+  $('#admin-login-modal').addEventListener('click', event => { if (event.target === $('#admin-login-modal')) closeAdminLogin(); });
+  $('#admin-login-form').addEventListener('submit', async event => {
+    event.preventDefault(); const errorBox = $('#admin-login-error'); const submitButton = $('#admin-login-submit');
+    errorBox.classList.add('hidden'); submitButton.disabled = true; submitButton.textContent = 'กำลังตรวจสอบ…';
+    try { await loginAdmin($('#admin-password').value); }
+    catch (error) { errorBox.textContent = error.message; errorBox.classList.remove('hidden'); }
+    finally { submitButton.disabled = false; submitButton.textContent = 'เข้าสู่ระบบ'; }
+  });
   $('#collapse-button').addEventListener('click', () => { document.body.classList.toggle('sidebar-collapsed'); $('#collapse-button span').textContent = document.body.classList.contains('sidebar-collapsed') ? '›' : '‹'; });
   window.addEventListener('hashchange', () => { const route = window.location.hash.slice(1); if (routeMeta[route] && route !== state.route) setRoute(route); }); fetchData();
 }

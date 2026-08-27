@@ -62,11 +62,19 @@
           </button>
           <div class="min-w-0 flex-1"><p class="text-xs font-medium text-brand-600">Teacher Workspace</p><h1 id="page-title" class="truncate text-lg font-semibold text-slate-800">แดชบอร์ด</h1></div>
           <button id="refresh-data-button" class="grid h-10 w-10 place-items-center rounded-xl bg-sky-50 text-sky-700 hover:bg-sky-100" aria-label="รีเฟรชข้อมูลล่าสุด" title="รีเฟรชข้อมูลล่าสุด">↻</button>
-          <button id="view-mode-button" class="hidden items-center gap-2 rounded-xl bg-violet-50 px-3 py-2 text-xs font-medium text-violet-700 hover:bg-violet-100 sm:flex" aria-label="เปลี่ยนมุมมองเว็บไซต์"><span>◉</span><span id="view-mode-label">ผู้ดูแลระบบ</span></button>
+          <button id="admin-access-button" class="flex items-center gap-2 rounded-xl bg-violet-50 px-3 py-2 text-xs font-medium text-violet-700 hover:bg-violet-100" aria-label="เข้าสู่ระบบผู้ดูแล"><span>⚙</span><span id="admin-access-label" class="hidden sm:inline">เข้าสู่ระบบ Admin</span></button>
           <div class="hidden items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700 md:flex"><span class="h-2 w-2 rounded-full bg-emerald-500"></span><span id="data-status">พร้อมใช้งาน</span></div>
         </header>
         <div id="content" class="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8" aria-live="polite"></div>
       </main>
+    </div>
+    <div id="admin-login-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/55 p-4" role="dialog" aria-modal="true" aria-labelledby="admin-login-title">
+      <form id="admin-login-form" class="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
+        <div class="flex items-start justify-between gap-4"><div><p class="text-sm font-medium text-violet-600">Admin CMS</p><h2 id="admin-login-title" class="mt-1 text-xl font-semibold text-slate-800">เข้าสู่ระบบผู้ดูแล</h2></div><button id="close-admin-login" type="button" class="rounded-lg px-2 py-1 text-lg text-slate-400 hover:bg-slate-100" aria-label="ปิด">×</button></div>
+        <label class="mt-6 block"><span class="mb-2 block text-sm font-medium text-slate-700">รหัสผ่าน Admin</span><input id="admin-password" type="password" required autocomplete="current-password" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100" placeholder="กรอกรหัสผ่าน" /></label>
+        <p id="admin-login-error" class="mt-3 hidden text-sm text-rose-600"></p>
+        <button id="admin-login-submit" type="submit" class="mt-5 w-full rounded-xl bg-violet-600 px-4 py-3 text-sm font-medium text-white hover:bg-violet-700">เข้าสู่ระบบ</button>
+      </form>
     </div>
     <div id="toast-container" class="fixed right-4 top-4 z-50 space-y-3" aria-live="assertive"></div>
     <script src="mockData.js"></script>
