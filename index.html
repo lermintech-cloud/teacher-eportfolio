@@ -15,20 +15,28 @@
           extend: {
             fontFamily: { sans: ['Prompt', 'sans-serif'] },
             colors: { brand: { 50: '#f5f0ff', 100: '#eadfff', 500: '#9873dd', 600: '#8056ce', 700: '#6840ae', 900: '#3e266c' } },
-            boxShadow: { soft: '0 14px 34px rgba(122, 84, 188, .12)' }
+            boxShadow: { soft: '0 16px 42px rgba(78, 46, 132, .14)', premium: '0 24px 60px rgba(59, 35, 104, .20)' }
           }
         }
       };
     </script>
     <style>
       [x-cloak] { display: none; }
-      body { background: radial-gradient(circle at 5% 5%, #fff6d9 0, transparent 20rem), radial-gradient(circle at 95% 10%, #e6f7ff 0, transparent 23rem), #faf9ff; }
-      .nav-item { transition: background-color .18s ease, color .18s ease, transform .18s ease; }
-      .nav-item:hover { transform: translateX(2px); }
+      body { background: radial-gradient(circle at 0% 0%, #f4eaff 0, transparent 26rem), radial-gradient(circle at 100% 5%, #dff8ff 0, transparent 27rem), radial-gradient(circle at 60% 100%, #fff0d8 0, transparent 24rem), #f8f8fc; }
+      body::before { content: ''; position: fixed; inset: 0; pointer-events: none; opacity: .42; background-image: radial-gradient(#b8a4dc 0.65px, transparent 0.65px); background-size: 22px 22px; mask-image: linear-gradient(to bottom, black, transparent 75%); }
+      .nav-item { transition: background-color .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease; }
+      .nav-item:hover { transform: translateX(3px); }
       .sidebar .nav-item { color: #cbd5e1 !important; }
       .sidebar .nav-item:hover { background: rgba(255,255,255,.10); color: #ffffff !important; }
       .sidebar .nav-item.active { background: linear-gradient(90deg, #8b5cf6, #c026d3); color: #ffffff !important; font-weight: 600; box-shadow: 0 8px 18px rgba(139, 92, 246, .28); }
-      .sidebar { transition: transform .25s ease, width .25s ease; }
+      .sidebar { transition: transform .25s ease, width .25s ease; background-image: radial-gradient(circle at 30% 0%, rgba(139,92,246,.34), transparent 20rem), linear-gradient(165deg, #151028 0%, #0a1020 60%, #090d18 100%); }
+      .sidebar::after { content: ''; position: absolute; right: 0; top: 5rem; bottom: 5rem; width: 1px; background: linear-gradient(transparent, rgba(216,180,254,.6), transparent); }
+      .sidebar nav { scrollbar-width: thin; scrollbar-color: #6d4cb5 transparent; }
+      .premium-hero { isolation: isolate; box-shadow: 0 24px 58px rgba(103, 59, 169, .28); }
+      .premium-hero::before { content: ''; position: absolute; inset: 0; z-index: -1; opacity: .35; background-image: linear-gradient(135deg, rgba(255,255,255,.25) 1px, transparent 1px), linear-gradient(45deg, rgba(255,255,255,.14) 1px, transparent 1px); background-size: 28px 28px; }
+      .stat-card { transition: transform .22s ease, box-shadow .22s ease; }
+      .stat-card:hover { transform: translateY(-4px); box-shadow: 0 18px 32px rgba(78, 46, 132, .14); }
+      .glass-panel { background: rgba(255,255,255,.78); backdrop-filter: blur(16px); }
       .skeleton { background: linear-gradient(90deg, #e8eef2 25%, #f5f7f8 37%, #e8eef2 63%); background-size: 400% 100%; animation: shine 1.4s ease infinite; }
       @keyframes shine { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
       @media (min-width: 1024px) { body.sidebar-collapsed .sidebar { width: 5.25rem; } body.sidebar-collapsed main { margin-left: 5.25rem; } body.sidebar-collapsed .sidebar-label, body.sidebar-collapsed .sidebar-heading, body.sidebar-collapsed .sidebar-profile { display: none; } body.sidebar-collapsed .nav-item { justify-content: center; padding-left: .75rem; padding-right: .75rem; } }
@@ -56,7 +64,7 @@
         </div>
       </aside>
       <main class="min-h-screen transition-all lg:ml-72">
-        <header class="sticky top-0 z-20 flex h-20 items-center gap-4 border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6 lg:px-8">
+        <header class="sticky top-0 z-20 flex h-20 items-center gap-4 border-b border-white/80 bg-white/75 px-4 shadow-[0_4px_24px_rgba(69,39,111,.05)] backdrop-blur-xl sm:px-6 lg:px-8">
           <button id="menu-button" class="grid h-10 w-10 place-items-center rounded-xl text-slate-600 hover:bg-slate-100 lg:hidden" aria-label="เปิดเมนู">
             <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
