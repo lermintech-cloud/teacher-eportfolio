@@ -1,0 +1,3302 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบสารสนเทศ และ e-Portfolio ข้าราชการครู (ว.PA)</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome 6 Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Google Font: Sarabun -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- jQuery 3.7 CDN -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <!-- Chart.js 4 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- DataTables.net CDN -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+  <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+  <!-- SweetAlert2 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Alpine.js 3 CDN (defer) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <style>
+    [x-cloak] { display: none !important; }
+    * { font-family: 'Sarabun', sans-serif; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    
+    .hero-gradient { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3b82f6 100%); }
+    .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(226, 232, 240, 0.8); }
+    .drag-active { border-color: #2563eb !important; background-color: #eff6ff !important; }
+    .tab-transition { transition: all 0.2s ease-in-out; }
+    
+    /* DataTables Overrides */
+    .dataTables_wrapper .dataTables_length select,
+    .dataTables_wrapper .dataTables_filter input {
+      border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.375rem 0.75rem; outline: none;
+    }
+    .dataTables_wrapper .dataTables_filter input:focus {
+      border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+    table.dataTable { border-collapse: collapse !important; width: 100% !important; }
+    table.dataTable thead th { background-color: #1e293b !important; color: #ffffff !important; padding: 12px 16px !important; font-weight: 600; }
+    table.dataTable tbody td { padding: 12px 16px !important; vertical-align: middle; }
+    .dataTables_paginate .paginate_button.current { background: #2563eb !important; color: white !important; border-radius: 0.375rem !important; border: none !important; }
+
+    /* Mobile-Style PIN Keypad Styling */
+    .keypad-btn {
+      width: 4.25rem;
+      height: 4.25rem;
+      border-radius: 9999px;
+      background: rgba(30, 41, 59, 0.7);
+      border: 1.5px solid rgba(71, 85, 105, 0.8);
+      color: #f8fafc;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .keypad-btn:hover {
+      background: rgba(51, 65, 85, 0.9);
+      border-color: #60a5fa;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px -2px rgba(59, 130, 246, 0.25);
+    }
+    .keypad-btn:active {
+      transform: scale(0.92);
+      background: #1d4ed8;
+      border-color: #3b82f6;
+      box-shadow: none;
+    }
+    .pin-bubble {
+      width: 1.1rem;
+      height: 1.1rem;
+      border-radius: 9999px;
+      border: 2px solid #64748b;
+      background: transparent;
+      transition: all 0.2s ease;
+    }
+    .pin-bubble.filled {
+      background: #3b82f6;
+      border-color: #60a5fa;
+      box-shadow: 0 0 12px rgba(96, 165, 250, 0.8);
+      transform: scale(1.2);
+    }
+    @keyframes pin-shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-10px); }
+      40%, 80% { transform: translateX(10px); }
+    }
+    .shake-pin {
+      animation: pin-shake 0.4s ease-in-out;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col" x-data="app">
+
+  <!-- Fullscreen Loading Spinner Overlay -->
+  <div x-show="loading" class="fixed inset-0 bg-slate-900/80 z-50 flex flex-col items-center justify-center text-white backdrop-blur-sm">
+    <div class="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+    <h2 class="text-xl font-semibold">กำลังโหลดข้อมูลระบบสารสนเทศ...</h2>
+    <p class="text-sm text-slate-300 mt-1" x-text="isGasEnvironment ? 'ระบบกำลังเชื่อมต่อกับ Google Sheets & Drive' : 'กำลังเริ่มระบบในโหมดออฟไลน์/ทดสอบในเครื่อง (Local Mode)'"></p>
+  </div>
+
+  <!-- Top Mobile Bar -->
+  <header class="lg:hidden bg-slate-900 text-white flex items-center justify-between px-4 py-3 sticky top-0 z-30 shadow-md">
+    <div class="flex items-center space-x-3">
+      <button @click="sidebarOpen = !sidebarOpen" class="text-slate-300 hover:text-white text-xl p-1">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <span class="font-bold text-base tracking-wide flex items-center gap-2">
+        <img :src="profile.schoolLogoUrl || settings.schoolLogoUrl || 'https://cdn-icons-png.flaticon.com/512/2997/2997327.png'" class="w-7 h-7 rounded-lg object-contain bg-white p-0.5 shadow shrink-0">
+        <span>e-Portfolio ครู</span>
+      </span>
+    </div>
+    
+    <!-- Mode Switcher Badge Mobile -->
+    <button @click="isAdminUnlocked ? lockAdmin() : requestAdminAccess()" class="text-xs px-2.5 py-1 rounded-full border transition flex items-center gap-1 font-medium" :class="isAdminUnlocked ? 'bg-amber-900/80 text-amber-300 border-amber-700/60' : 'bg-emerald-900/80 text-emerald-300 border-emerald-700/60'">
+      <i :class="isAdminUnlocked ? 'fa-solid fa-lock-open' : 'fa-solid fa-lock'"></i>
+      <span x-text="isAdminUnlocked ? 'Admin (ปลดล็อคแล้ว)' : 'ปลดล็อค Admin'"></span>
+    </button>
+  </header>
+
+  <div class="flex flex-1 min-h-screen overflow-hidden">
+    
+    <!-- Sidebar Navigation -->
+    <aside 
+      class="fixed inset-y-0 left-0 z-40 w-72 bg-slate-900 text-slate-200 flex flex-col transition-transform duration-300 transform lg:translate-x-0 lg:static shadow-xl"
+      :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+    >
+      <!-- Sidebar Header -->
+      <div class="p-5 border-b border-slate-800 bg-slate-950 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <img :src="profile.schoolLogoUrl || settings.schoolLogoUrl || 'https://cdn-icons-png.flaticon.com/512/2997/2997327.png'" class="w-10 h-10 rounded-xl object-contain bg-white p-1 shadow-lg border border-blue-400/50 shrink-0">
+          <div>
+            <h1 class="font-bold text-white text-base leading-tight">e-Portfolio ครู</h1>
+            <p class="text-xs text-blue-400 font-medium truncate max-w-[150px]" x-text="profile.school || 'ระบบสารสนเทศ ว.PA'"></p>
+          </div>
+        </div>
+        <button @click="sidebarOpen = false" class="lg:hidden text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <!-- User Info Badge & Admin Lock Status -->
+      <div class="px-5 py-4 bg-slate-850 border-b border-slate-800/80 flex items-center space-x-3">
+        <img :src="profile.imageUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2'" class="w-11 h-11 rounded-full object-cover border-2 border-blue-500 shadow shrink-0">
+        <div class="overflow-hidden flex-1">
+          <p class="text-sm font-semibold text-white truncate" x-text="profile.fullName || 'ครูผู้สอน'"></p>
+          <p class="text-xs text-slate-400 truncate" x-text="profile.position || 'ตำแหน่ง/วิทยฐานะ'"></p>
+          <div class="mt-2 flex items-center justify-between gap-1">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="inline-block w-2 h-2 rounded-full shrink-0" :class="isAdminUnlocked ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'"></span>
+              <span class="text-[10px] font-medium truncate" :class="isAdminUnlocked ? 'text-amber-400 font-bold' : 'text-emerald-400'" x-text="isAdminUnlocked ? 'Admin (ปลดล็อค)' : 'บุคคลทั่วไป (ล็อค)'"></span>
+            </div>
+            <button x-show="isAdminUnlocked" @click="lockAdmin()" class="text-[10px] px-2 py-0.5 rounded-md bg-rose-900/60 text-rose-300 hover:bg-rose-800 border border-rose-700/60 flex items-center gap-1 transition shrink-0" title="ล็อคระบบ Admin">
+              <i class="fa-solid fa-lock"></i> ล็อค
+            </button>
+            <button x-show="!isAdminUnlocked" @click="requestAdminAccess()" class="text-[10px] px-2 py-0.5 rounded-md bg-blue-900/60 text-blue-300 hover:bg-blue-800 border border-blue-700/60 flex items-center gap-1 transition shrink-0" title="กดรหัสเพื่อปลดล็อคสิทธิ์ Admin">
+              <i class="fa-solid fa-key"></i> ปลดล็อค
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Items -->
+      <nav class="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+        
+        <!-- Category 1: Profile & Overview -->
+        <div>
+          <p class="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">1. สารสนเทศ & โปรไฟล์</p>
+          <div class="space-y-1">
+            <button @click="setTab('showcase')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium tab-transition" :class="activeTab === 'showcase' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'">
+              <i class="fa-solid fa-house w-5 text-center text-blue-400" :class="activeTab === 'showcase' ? 'text-white' : ''"></i>
+              <span>หน้าแรก (Showcase)</span>
+            </button>
+            <button @click="setTab('profile')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium tab-transition" :class="activeTab === 'profile' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'">
+              <i class="fa-solid fa-id-card w-5 text-center text-emerald-400" :class="activeTab === 'profile' ? 'text-white' : ''"></i>
+              <span>ประวัติส่วนตัว & รับราชการ</span>
+            </button>
+            <button @click="setTab('timetable')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium tab-transition" :class="activeTab === 'timetable' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'">
+              <i class="fa-solid fa-calendar-days w-5 text-center text-violet-400" :class="activeTab === 'timetable' ? 'text-white' : ''"></i>
+              <span>ตารางสอนประจำสัปดาห์</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Category 2: PA Evidence -->
+        <div>
+          <p class="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">2. ผลงาน ว.PA 3 ด้าน 15 สายงาน</p>
+          <div class="space-y-1">
+            <button @click="setTab('cat1')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium tab-transition" :class="activeTab === 'cat1' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'">
+              <i class="fa-solid fa-book-open w-5 text-center text-amber-400" :class="activeTab === 'cat1' ? 'text-white' : ''"></i>
+              <span>ด้านที่ 1: การจัดการเรียนรู้</span>
+            </button>
+            <button @click="setTab('cat2')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium tab-transition" :class="activeTab === 'cat2' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'">
+              <i class="fa-solid fa-hand-holding-hand w-5 text-center text-indigo-400" :class="activeTab === 'cat2' ? 'text-white' : ''"></i>
+              <span>ด้านที่ 2: การส่งเสริม & สนับสนุน</span>
+            </button>
+            <button @click="setTab('cat3')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium tab-transition" :class="activeTab === 'cat3' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'">
+              <i class="fa-solid fa-award w-5 text-center text-rose-400" :class="activeTab === 'cat3' ? 'text-white' : ''"></i>
+              <span>ด้านที่ 3: การพัฒนาตนเอง</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Category 3: Special Duties, Awards & Certificates -->
+        <div>
+          <p class="px-3 text-[11px] font-bold text-sky-400 uppercase tracking-wider mb-2">3. งานพิเศษ & ผลงานดีเด่น</p>
+          <div class="space-y-1">
+            <button @click="setTab('special-tasks')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium tab-transition" :class="activeTab === 'special-tasks' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'">
+              <i class="fa-solid fa-list-check w-5 text-center text-sky-400" :class="activeTab === 'special-tasks' ? 'text-white' : ''"></i>
+              <span>งานพิเศษ & โครงการ</span>
+            </button>
+            <button @click="setTab('awards')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium tab-transition" :class="activeTab === 'awards' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'">
+              <i class="fa-solid fa-trophy w-5 text-center text-amber-400" :class="activeTab === 'awards' ? 'text-white' : ''"></i>
+              <span>รางวัล & ผลงานดีเด่น</span>
+            </button>
+            <button @click="setTab('certificates')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium tab-transition" :class="activeTab === 'certificates' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'">
+              <i class="fa-solid fa-certificate w-5 text-center text-rose-400" :class="activeTab === 'certificates' ? 'text-white' : ''"></i>
+              <span>คลังเกียรติบัตร</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Category 4: Submissions (Visible ONLY for Unlocked Owner / Admin) -->
+        <div x-show="isAdminUnlocked" x-cloak>
+          <p class="px-3 text-[11px] font-bold text-teal-400 uppercase tracking-wider mb-2">4. ระบบนำเข้า & ประวัติ (สำหรับเจ้าของ)</p>
+          <div class="space-y-1">
+            <button @click="setTab('upload')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium tab-transition" :class="activeTab === 'upload' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'">
+              <i class="fa-solid fa-cloud-arrow-up w-5 text-center text-sky-400" :class="activeTab === 'upload' ? 'text-white' : ''"></i>
+              <span>นำเข้าข้อมูล / อัปโหลด</span>
+            </button>
+            <button @click="setTab('myrecords')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium tab-transition" :class="activeTab === 'myrecords' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'">
+              <i class="fa-solid fa-folder-open w-5 text-center text-teal-400" :class="activeTab === 'myrecords' ? 'text-white' : ''"></i>
+              <span>คลังเอกสาร & ประวัติของฉัน</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Category 5: Admin Panel (Visible ONLY for Unlocked Admin) -->
+        <div x-show="isAdminUnlocked && isAdmin" x-cloak>
+          <p class="px-3 text-[11px] font-bold text-amber-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+            <span>5. จัดการระบบ (Admin Only)</span>
+            <i class="fa-solid fa-shield-halved text-xs"></i>
+          </p>
+          <div class="space-y-1">
+            <button @click="setTab('admin-master')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium tab-transition" :class="activeTab === 'admin-master' ? 'bg-amber-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'">
+              <i class="fa-solid fa-table-list w-5 text-center text-amber-300" :class="activeTab === 'admin-master' ? 'text-white' : ''"></i>
+              <span>ศูนย์รวมข้อมูลครูทั้งโรงเรียน</span>
+            </button>
+            <button @click="setTab('admin-settings')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium tab-transition" :class="activeTab === 'admin-settings' ? 'bg-amber-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'">
+              <i class="fa-solid fa-gears w-5 text-center text-orange-400" :class="activeTab === 'admin-settings' ? 'text-white' : ''"></i>
+              <span>ตั้งค่าระบบ & แจ้งเตือน & PIN</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Lock Prompt for Guests -->
+        <div x-show="!isAdminUnlocked" class="p-3 bg-slate-850/60 rounded-xl border border-slate-800 text-center">
+          <p class="text-xs text-slate-400 mb-2">เข้าใช้งานระบบจัดการครู / Admin</p>
+          <button @click="requestAdminAccess()" class="w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow">
+            <i class="fa-solid fa-key"></i> ใส่ PIN ปลดล็อค Admin
+          </button>
+        </div>
+
+      </nav>
+
+      <!-- Sidebar Footer -->
+      <div class="p-4 border-t border-slate-800 bg-slate-950 text-center text-xs text-slate-500">
+        <p class="font-medium text-slate-400">ระบบสารสนเทศครู v3.0 (ว.PA)</p>
+        <p class="text-[10px] mt-0.5 text-slate-500" x-text="isGasEnvironment ? 'Google Apps Script Online Mode' : 'Local Standalone Mode'"></p>
+      </div>
+    </aside>
+
+    <!-- Overlay for Mobile Sidebar -->
+    <div x-show="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-slate-900/60 z-30 lg:hidden backdrop-blur-xs"></div>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 overflow-y-auto bg-slate-50 p-4 md:p-8">
+
+      <!-- TOP BAR MODE SWITCHER BANNER -->
+      <div class="mb-6 bg-white border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+        <div class="flex items-center space-x-3 text-left">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow" :class="isAdminUnlocked ? 'bg-amber-600' : 'bg-emerald-600'">
+            <i :class="isAdminUnlocked ? 'fa-solid fa-user-gear' : 'fa-solid fa-eye'"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-slate-800 text-sm" x-text="isAdminUnlocked ? 'โหมดเจ้าของโปรไฟล์ / ผู้ดูแลระบบ (Teacher & Admin Mode)' : 'โหมดบุคคลทั่วไป (Public View Mode)'"></span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" :class="isAdminUnlocked ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'" x-text="isAdminUnlocked ? 'ปลดล็อคแล้ว - จัดการข้อมูลได้' : 'สำหรับคนนอก/กรรมการดูผลงาน'"></span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5" x-text="isAdminUnlocked ? 'ปลดล็อคด้วย PIN สำเร็จ: คุณสามารถอัปโหลดไฟล์ แก้ไขตารางสอน และจัดการระบบได้เต็มรูปแบบ' : 'ซ่อนเมนูจัดการข้อมูลและปุ่มแก้ไขทั้งหมด เหมาะสำหรับเปิดโชว์ผลงาน ว.PA (กดปุ่มปลดล็อคเพื่อใส่ PIN)'"></p>
+          </div>
+        </div>
+
+        <!-- Mode Toggle Segmented Pill Switcher -->
+        <div class="bg-slate-100 p-1 rounded-xl flex items-center shrink-0 border border-slate-200">
+          <button @click="switchViewMode('public')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5" :class="!isAdminUnlocked ? 'bg-emerald-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'">
+            <i class="fa-solid fa-eye"></i> บุคคลทั่วไป
+          </button>
+          <button @click="isAdminUnlocked ? switchViewMode('owner') : requestAdminAccess()" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5" :class="isAdminUnlocked ? 'bg-amber-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'">
+            <i :class="isAdminUnlocked ? 'fa-solid fa-user-pen' : 'fa-solid fa-lock'"></i>
+            <span x-text="isAdminUnlocked ? 'เจ้าของ / Admin' : 'ปลดล็อค Admin'"></span>
+          </button>
+          <template x-if="isAdminUnlocked">
+            <button @click="lockAdmin()" class="ml-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-rose-100 text-rose-700 hover:bg-rose-200 transition flex items-center gap-1" title="ล็อคระบบกลับสู่โหมดบุคคลทั่วไป">
+              <i class="fa-solid fa-lock"></i> ล็อค
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <!-- ==================================================================== -->
+      <!-- TAB 1: e-PORTFOLIO SHOWCASE & DASHBOARD                              -->
+      <!-- ==================================================================== -->
+      <section x-show="activeTab === 'showcase'" class="space-y-8">
+        
+        <!-- Profile Hero Banner -->
+        <div class="relative rounded-3xl overflow-hidden shadow-xl hero-gradient text-white p-6 md:p-10">
+          <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl">
+            <i class="fa-solid fa-graduation-cap"></i>
+          </div>
+          <div class="relative z-10 flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
+            <div class="relative group">
+              <img :src="profile.imageUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2'" class="w-32 h-32 md:w-36 md:h-36 rounded-2xl object-cover border-4 border-white/30 shadow-2xl">
+              <button x-show="viewMode !== 'public'" @click="openProfileModal()" class="absolute inset-0 bg-slate-900/60 text-white rounded-2xl opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition text-xs font-semibold" x-cloak>
+                <i class="fa-solid fa-pen-to-square text-lg mb-1"></i> แก้ไขรูป/โปรไฟล์
+              </button>
+            </div>
+            <div class="flex-1 text-center md:text-left space-y-3">
+              <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                <h2 class="text-2xl md:text-3xl font-bold tracking-tight" x-text="profile.fullName"></h2>
+                <span class="bg-blue-500/40 text-blue-100 text-xs px-3 py-1 rounded-full border border-blue-300/30" x-text="profile.position"></span>
+              </div>
+              <p class="text-sm md:text-base text-blue-100 font-medium flex items-center justify-center md:justify-start gap-2">
+                <img :src="profile.schoolLogoUrl || settings.schoolLogoUrl || 'https://cdn-icons-png.flaticon.com/512/2997/2997327.png'" class="w-7 h-7 rounded-lg object-contain bg-white p-0.5 shadow border border-white/30 shrink-0">
+                <span x-text="profile.school"></span>
+              </p>
+              
+              <!-- Motto Card -->
+              <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/15 shadow-inner">
+                <p class="text-xs text-blue-200 font-bold uppercase tracking-wider mb-1"><i class="fa-solid fa-quote-left text-amber-300 mr-1.5"></i> คติประจำใจ</p>
+                <p class="text-sm italic font-light text-slate-100" x-text="profile.motto"></p>
+              </div>
+
+              <div class="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-3">
+                <button x-show="viewMode !== 'public'" @click="openProfileModal()" class="bg-white text-blue-950 hover:bg-blue-50 font-semibold px-4 py-2 rounded-xl text-xs shadow-md transition flex items-center gap-2" x-cloak>
+                  <i class="fa-solid fa-user-pen"></i> แก้ไขโปรไฟล์
+                </button>
+                <button @click="setTab('timetable')" class="bg-violet-600 hover:bg-violet-500 text-white font-semibold px-4 py-2 rounded-xl text-xs shadow-md transition flex items-center gap-2 border border-violet-400/30">
+                  <i class="fa-solid fa-calendar-days"></i> ดูตารางสอน
+                </button>
+                <button x-show="viewMode !== 'public'" @click="setTab('upload')" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2 rounded-xl text-xs shadow-md transition flex items-center gap-2 border border-blue-400/30" x-cloak>
+                  <i class="fa-solid fa-plus"></i> เพิ่มผลงานใหม่
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CAROUSEL SLIDER (ภาพสไลด์ผลงานเด่น/กิจกรรม) -->
+        <div class="space-y-4" x-show="settings.sectionVisibility.showCarousel !== false">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+              <i class="fa-solid fa-images text-blue-600"></i> สไลด์ภาพผลงานและกิจกรรมเด่น (Highlights Slider)
+            </h3>
+            <div class="flex items-center space-x-2">
+              <button @click="prevSlide()" class="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 shadow flex items-center justify-center transition">
+                <i class="fa-solid fa-chevron-left text-xs"></i>
+              </button>
+              <button @click="nextSlide()" class="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 shadow flex items-center justify-center transition">
+                <i class="fa-solid fa-chevron-right text-xs"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="relative rounded-3xl overflow-hidden shadow-lg h-72 md:h-96 group">
+            <template x-for="(slide, index) in carouselSlides" :key="index">
+              <div 
+                x-show="currentSlide === index"
+                x-transition:enter="transition ease-out duration-500"
+                x-transition:enter-start="opacity-0 scale-95"
+                x-transition:enter-end="opacity-100 scale-100"
+                x-transition:leave="transition ease-in duration-300"
+                x-transition:leave-start="opacity-100 scale-100"
+                x-transition:leave-end="opacity-0 scale-95"
+                class="absolute inset-0"
+              >
+                <img :src="slide.image" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent flex flex-col justify-end p-6 md:p-8 text-white">
+                  <span class="inline-block text-[11px] font-bold px-3 py-1 rounded-full bg-blue-600 text-white w-fit mb-2 shadow" x-text="slide.tag"></span>
+                  <h3 class="text-lg md:text-2xl font-bold mb-1" x-text="slide.title"></h3>
+                  <p class="text-xs md:text-sm text-slate-200 max-w-2xl line-clamp-2" x-text="slide.description"></p>
+                </div>
+              </div>
+            </template>
+
+            <!-- Dots Indicator -->
+            <div class="absolute bottom-4 right-6 z-20 flex space-x-2">
+              <template x-for="(slide, index) in carouselSlides" :key="index">
+                <button @click="currentSlide = index" class="w-2.5 h-2.5 rounded-full transition-all duration-300" :class="currentSlide === index ? 'bg-blue-500 w-8' : 'bg-white/60 hover:bg-white'"></button>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats Overview Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4" x-show="settings.sectionVisibility.showStatsOverview !== false">
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center space-x-3">
+            <div class="w-11 h-11 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-lg shrink-0">
+              <i class="fa-solid fa-folder-open"></i>
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold text-slate-500 uppercase">เอกสารในระบบ</p>
+              <p class="text-xl font-bold text-slate-800" x-text="stats.totalSubmissions || 0"></p>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center space-x-3">
+            <div class="w-11 h-11 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-lg shrink-0">
+              <i class="fa-solid fa-certificate"></i>
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold text-slate-500 uppercase">เกียรติบัตร</p>
+              <p class="text-xl font-bold text-slate-800" x-text="stats.totalCertificates || 0"></p>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center space-x-3">
+            <div class="w-11 h-11 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center text-lg shrink-0">
+              <i class="fa-solid fa-list-check"></i>
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold text-slate-500 uppercase">งานพิเศษ/โครงการ</p>
+              <p class="text-xl font-bold text-slate-800" x-text="stats.totalSpecialTasks || 0"></p>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center space-x-3">
+            <div class="w-11 h-11 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg shrink-0">
+              <i class="fa-solid fa-trophy"></i>
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold text-slate-500 uppercase">รางวัลผลงาน</p>
+              <p class="text-xl font-bold text-slate-800" x-text="stats.totalAwards || 0"></p>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center space-x-3">
+            <div class="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg shrink-0">
+              <i class="fa-solid fa-award"></i>
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold text-slate-500 uppercase">ผลงาน ว.PA (3ด้าน)</p>
+              <p class="text-xl font-bold text-slate-800" x-text="(stats.cat1Count + stats.cat2Count + stats.cat3Count) || 0"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- RECENT CERTIFICATES SHOWCASE -->
+        <div class="space-y-4" x-show="settings.sectionVisibility.showFeaturedCertificates !== false">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+              <i class="fa-solid fa-award text-amber-500"></i> การ์ดเกียรติบัตรเด่น (Featured Certificates)
+            </h3>
+            <button x-show="viewMode !== 'public'" @click="setTab('myrecords')" class="text-xs text-blue-600 font-semibold hover:underline" x-cloak>
+              ดูเกียรติบัตรทั้งหมด &rarr;
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <template x-for="cert in showcaseItems.slice(0, 3)" :key="cert.id">
+              <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200/90 hover:shadow-xl transition-all duration-300 group flex flex-col justify-between">
+                <div class="relative h-48 overflow-hidden bg-slate-100">
+                  <img :src="cert.fileUrl" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                  <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <a :href="cert.fileUrl" target="_blank" class="bg-white text-slate-900 font-bold px-3 py-1.5 rounded-xl text-xs shadow hover:bg-slate-100 flex items-center gap-1">
+                      <i class="fa-solid fa-magnifying-glass-plus"></i> ขยายดูรูป
+                    </a>
+                  </div>
+                  <span class="absolute top-3 left-3 text-[10px] font-bold px-2.5 py-1 rounded-md bg-amber-500 text-white shadow" x-text="cert.academicYear ? 'ปี ' + cert.academicYear : 'เกียรติบัตรเด่น'"></span>
+                </div>
+                <div class="p-5 space-y-2">
+                  <h4 class="font-bold text-slate-800 text-sm group-hover:text-blue-600 transition line-clamp-2" x-text="cert.documentName"></h4>
+                  <p class="text-xs text-slate-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-building-columns text-slate-400"></i> <span x-text="cert.workCategory"></span>
+                  </p>
+                </div>
+                <div class="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                  <span x-text="cert.timestamp"></span>
+                  <a :href="cert.fileUrl" target="_blank" class="text-blue-600 font-semibold hover:underline flex items-center gap-1">
+                    <i class="fa-solid fa-up-right-from-square"></i> เปิดไฟล์
+                  </a>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- RECENT ACTIVITIES GRID -->
+        <div class="space-y-4" x-show="settings.sectionVisibility.showRecentActivities !== false">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+              <i class="fa-solid fa-camera-retro text-emerald-600"></i> ภาพกิจกรรมและการปฏิบัติงานล่าสุด (Recent Activities)
+            </h3>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <template x-for="(act, idx) in recentActivities" :key="idx">
+              <div class="bg-white rounded-2xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-md transition">
+                <div class="h-36 overflow-hidden">
+                  <img :src="act.image" class="w-full h-full object-cover hover:scale-105 transition duration-300">
+                </div>
+                <div class="p-4 space-y-1.5">
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700" x-text="act.date"></span>
+                  <h4 class="font-bold text-slate-800 text-xs line-clamp-2" x-text="act.title"></h4>
+                  <p class="text-[11px] text-slate-500 truncate" x-text="act.location"></p>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Chart & Bio Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 lg:col-span-2">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie text-blue-600"></i> สัดส่วนภาระงานปฏิบัติการ ว.PA
+              </h3>
+              <span class="text-xs text-slate-400">อัปเดตเรียลไทม์</span>
+            </div>
+            <div class="h-64 relative flex items-center justify-center">
+              <canvas id="workDistributionChart"></canvas>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 flex flex-col justify-between">
+            <div>
+              <h3 class="font-bold text-slate-800 text-base mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-address-card text-emerald-600"></i> สรุปประวัติและขอบเขตงาน
+              </h3>
+              <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line" x-text="profile.bio"></p>
+            </div>
+            <div class="pt-4 border-t border-slate-100 mt-4">
+              <div class="flex items-center justify-between text-xs text-slate-500">
+                <span>อีเมลผู้ใช้:</span>
+                <span class="font-medium text-slate-700" x-text="activeEmail"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ==================================================================== -->
+      <!-- TAB: TEACHING TIMETABLE                                              -->
+      <!-- ==================================================================== -->
+      <section x-show="activeTab === 'timetable'" class="space-y-6" x-cloak>
+        <div class="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-slate-200">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-6">
+            <div>
+              <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-calendar-days text-violet-600"></i> ตารางสอนประจำสัปดาห์ (Teaching Timetable)
+              </h2>
+              <p class="text-xs text-slate-500 mt-0.5">วิชาเรียน คาบสอน และชั่วโมงปฏิบัติการการสอนตามตารางเรียน</p>
+            </div>
+            <div class="flex items-center space-x-3">
+              <span class="bg-violet-100 text-violet-800 font-bold px-3 py-1.5 rounded-xl text-xs border border-violet-200">
+                รวมทั้งสิ้น <span x-text="totalTeachingHours"></span> ชั่วโมง/สัปดาห์
+              </span>
+              <button x-show="viewMode !== 'public'" @click="openTimetableModal()" class="bg-violet-600 hover:bg-violet-500 text-white font-semibold px-4 py-2 rounded-xl text-xs shadow transition flex items-center gap-1.5" x-cloak>
+                <i class="fa-solid fa-pen-to-square"></i> แก้ไขคาบเรียน
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-center text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-900 text-white font-bold">
+                  <th class="p-3 border border-slate-800 w-24">วัน / คาบ</th>
+                  <th class="p-3 border border-slate-800">คาบ 1<br><span class="text-[10px] font-normal text-slate-300">08:30-09:25</span></th>
+                  <th class="p-3 border border-slate-800">คาบ 2<br><span class="text-[10px] font-normal text-slate-300">09:25-10:20</span></th>
+                  <th class="p-3 border border-slate-800">คาบ 3<br><span class="text-[10px] font-normal text-slate-300">10:20-11:15</span></th>
+                  <th class="p-3 border border-slate-800">คาบ 4<br><span class="text-[10px] font-normal text-slate-300">11:15-12:10</span></th>
+                  <th class="p-3 border border-slate-800 bg-amber-900 text-amber-200">พักกลางวัน<br><span class="text-[10px] font-normal">12:10-13:00</span></th>
+                  <th class="p-3 border border-slate-800">คาบ 5<br><span class="text-[10px] font-normal text-slate-300">13:00-13:55</span></th>
+                  <th class="p-3 border border-slate-800">คาบ 6<br><span class="text-[10px] font-normal text-slate-300">13:55-14:50</span></th>
+                  <th class="p-3 border border-slate-800">คาบ 7<br><span class="text-[10px] font-normal text-slate-300">14:50-15:30</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="day in weekDays" :key="day.id">
+                  <tr class="border-b border-slate-200 hover:bg-slate-50/80 transition">
+                    <td class="p-3 font-bold border border-slate-200 text-white" :class="day.color" x-text="day.name"></td>
+                    <template x-for="period in 7" :key="period">
+                      <td class="p-2 border border-slate-200 align-middle">
+                        <template x-if="getSlot(day.id, period)">
+                          <div class="p-2 rounded-xl text-left space-y-1 shadow-sm transition hover:shadow-md" :class="getSlotBg(getSlot(day.id, period).type)">
+                            <div class="flex items-center justify-between">
+                              <span class="font-bold text-slate-900 truncate" x-text="getSlot(day.id, period).subject"></span>
+                              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/70 text-slate-700" x-text="getSlot(day.id, period).code"></span>
+                            </div>
+                            <div class="text-[11px] text-slate-700 font-medium flex items-center justify-between">
+                              <span x-text="'ชั้น ' + getSlot(day.id, period).room"></span>
+                              <span class="text-[10px] text-slate-500" x-text="'ห้อง ' + getSlot(day.id, period).building"></span>
+                            </div>
+                          </div>
+                        </template>
+                        <template x-if="!getSlot(day.id, period)">
+                          <span class="text-slate-300 text-[11px] font-light">- ว่าง -</span>
+                        </template>
+                      </td>
+                    </template>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pt-4 border-t border-slate-100 flex flex-wrap items-center gap-4 text-xs">
+            <span class="font-bold text-slate-700">สัญลักษณ์สีรายวิชา:</span>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-blue-100 border border-blue-300"></span> <span>วิชาพื้นฐาน</span></div>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-100 border border-emerald-300"></span> <span>วิชาเพิ่มเติม</span></div>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-amber-100 border border-amber-300"></span> <span>กิจกรรมพัฒนาผู้เรียน / โฮมรูม</span></div>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-violet-100 border border-violet-300"></span> <span>ชุมนุม / PLC / งานฝ่าย</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================================================================== -->
+      <!-- TAB 2: TEACHER PROFILE                                               -->
+      <!-- ==================================================================== -->
+      <section x-show="activeTab === 'profile'" class="space-y-6" x-cloak>
+        <div class="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-slate-200">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-5 mb-6">
+            <div>
+              <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-id-card text-emerald-600"></i> ข้อมูลส่วนตัว & ประวัติการรับราชการ
+              </h2>
+              <p class="text-xs text-slate-500 mt-0.5">รายละเอียดข้อมูลพื้นฐาน ประวัติการศึกษา และภาระงาน</p>
+            </div>
+            <button x-show="viewMode !== 'public'" @click="openProfileModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow transition" x-cloak>
+              <i class="fa-solid fa-pen-to-square mr-1"></i> แก้ไขข้อมูล
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="text-center space-y-3">
+              <img :src="profile.imageUrl" class="w-40 h-40 rounded-2xl object-cover border-4 border-slate-100 shadow-md mx-auto">
+              <h3 class="font-bold text-slate-800 text-lg" x-text="profile.fullName"></h3>
+              <p class="text-xs text-blue-600 font-semibold" x-text="profile.position"></p>
+            </div>
+            <div class="md:col-span-2 space-y-4 text-sm">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60">
+                  <p class="text-xs text-slate-400 font-semibold">โรงเรียน / หน่วยงาน</p>
+                  <p class="font-semibold text-slate-800 mt-0.5" x-text="profile.school"></p>
+                </div>
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60">
+                  <p class="text-xs text-slate-400 font-semibold">อีเมลผู้ใช้งาน</p>
+                  <p class="font-semibold text-slate-800 mt-0.5" x-text="profile.email"></p>
+                </div>
+              </div>
+              <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+                <p class="text-xs text-slate-400 font-semibold mb-1">คติประจำใจ</p>
+                <p class="text-slate-700 italic" x-text="profile.motto"></p>
+              </div>
+              <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+                <p class="text-xs text-slate-400 font-semibold mb-1">ประวัติโดยย่อ / ผลงานเด่น</p>
+                <p class="text-slate-700 leading-relaxed whitespace-pre-line" x-text="profile.bio"></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- CUTE CAREER TIMELINE SECTION -->
+          <div x-show="settings.sectionVisibility.showCareerTimeline !== false" class="mt-8 border-t border-slate-100 pt-8 space-y-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <i class="fa-solid fa-timeline text-amber-500"></i> ไทม์ไลน์การรับราชการ & เส้นทางความก้าวหน้า (Career Progression)
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">ประวัติการดำรงตำแหน่ง พัฒนาการวิทยฐานะ และความภาคภูมิใจในการปฏิบัติงาน</p>
+              </div>
+              <button x-show="viewMode !== 'public'" @click="openProfileModal()" class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold px-3 py-1.5 rounded-xl shadow transition flex items-center gap-1.5" x-cloak>
+                <i class="fa-solid fa-pen-to-square"></i> แก้ไขไทม์ไลน์
+              </button>
+            </div>
+
+            <div class="timeline-container py-2">
+              <template x-for="(item, index) in profile.careerTimeline" :key="index">
+                <div class="timeline-item">
+                  <div class="timeline-node" :class="{
+                    'bg-emerald-500 text-white': item.color === 'emerald',
+                    'bg-blue-500 text-white': item.color === 'blue' || !item.color,
+                    'bg-amber-500 text-white': item.color === 'amber',
+                    'bg-rose-500 text-white': item.color === 'rose',
+                    'bg-violet-500 text-white': item.color === 'violet'
+                  }">
+                    <i class="fa-solid" :class="item.icon || 'fa-award'"></i>
+                  </div>
+                  <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200/80 shadow-sm transition hover:shadow-md hover:border-blue-200">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                      <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold px-3 py-1 rounded-full text-white shadow-xs" :class="{
+                          'bg-emerald-600': item.color === 'emerald',
+                          'bg-blue-600': item.color === 'blue' || !item.color,
+                          'bg-amber-600': item.color === 'amber',
+                          'bg-rose-600': item.color === 'rose',
+                          'bg-violet-600': item.color === 'violet'
+                        }" x-text="item.year"></span>
+                        <h4 class="font-bold text-slate-800 text-base" x-text="item.position"></h4>
+                      </div>
+                      <span class="text-xs font-semibold text-slate-500 bg-white px-2.5 py-1 rounded-lg border border-slate-200 flex items-center gap-1">
+                        <i class="fa-solid fa-school text-blue-500"></i> <span x-text="item.school"></span>
+                      </span>
+                    </div>
+                    <p class="text-xs text-slate-600 leading-relaxed" x-text="item.details"></p>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TABS 3, 4, 5: PA CATEGORY VIEWS -->
+      <template x-for="catIndex in ['cat1', 'cat2', 'cat3']">
+        <section x-show="activeTab === catIndex" class="space-y-6" x-cloak>
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-2">
+              <i class="fa-solid fa-folder-open text-blue-600"></i>
+              <span x-text="catIndex === 'cat1' ? 'ด้านที่ 1: การจัดการเรียนรู้' : (catIndex === 'cat2' ? 'ด้านที่ 2: การส่งเสริมและสนับสนุนการจัดการเรียนรู้' : 'ด้านที่ 3: การพัฒนาตนเองและวิชาชีพ')"></span>
+            </h2>
+            <p class="text-xs text-slate-500 mb-6">รวบรวมไฟล์ผลงาน หลักฐานอ้างอิง ว.PA ประจำหมวดหมู่</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <template x-for="item in getSubmissionsByCategory(catIndex === 'cat1' ? 'ด้านที่ 1' : (catIndex === 'cat2' ? 'ด้านที่ 2' : 'ด้านที่ 3'))" :key="item.id">
+                <div class="bg-slate-50 rounded-xl p-5 border border-slate-200 flex flex-col justify-between">
+                  <div class="space-y-2">
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700" x-text="item.academicYear ? 'ปี ' + item.academicYear : 'ทั่วไป'"></span>
+                    <h4 class="font-bold text-slate-800 text-sm" x-text="item.documentName"></h4>
+                    <p class="text-xs text-slate-500" x-text="item.workCategory"></p>
+                  </div>
+                  <div class="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-xs">
+                    <span class="text-slate-400" x-text="item.timestamp"></span>
+                    <a :href="item.fileUrl" target="_blank" class="text-blue-600 font-semibold hover:underline flex items-center gap-1">
+                      <i class="fa-solid fa-up-right-from-square"></i> ดูไฟล์
+                    </a>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </section>
+      </template>
+
+      <!-- TAB: SPECIAL TASKS & PROJECTS -->
+      <section x-show="activeTab === 'special-tasks'" class="space-y-6" x-cloak>
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-6">
+            <div>
+              <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-list-check text-sky-600"></i> งานพิเศษ & โครงการที่ได้รับมอบหมาย
+              </h2>
+              <p class="text-xs text-slate-500 mt-0.5">รวบรวมภาระงานมอบหมาย คำสั่งโรงเรียน งานวิชาการ กิจกรรม และโครงการพัฒนาสถานศึกษา</p>
+            </div>
+            <button x-show="viewMode !== 'public'" @click="openSpecialTaskModal()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md transition flex items-center gap-1.5 shrink-0" x-cloak>
+              <i class="fa-solid fa-plus"></i> เพิ่มงานพิเศษ / โครงการ
+            </button>
+          </div>
+
+          <!-- Special Tasks Filter Grid & View Toggle -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 mb-1">กรองปีการศึกษา</label>
+              <select x-model="specialTaskYearFilter" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+                <option value="">-- แสดงทุกปีการศึกษา --</option>
+                <template x-for="yr in settings.academicYears" :key="yr">
+                  <option :value="yr" x-text="'ปีการศึกษา ' + yr"></option>
+                </template>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-semibold text-slate-500 mb-1">ค้นหาโครงการ/งานพิเศษ</label>
+              <input type="text" x-model="specialTaskSearch" placeholder="พิมพ์ชื่อคำสั่ง หรือ งานที่ได้รับมอบหมาย..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 mb-1">รูปแบบการแสดงผล</label>
+              <div class="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200">
+                <button @click="specialTaskViewMode = 'grid'" class="flex-1 py-1 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1" :class="specialTaskViewMode === 'grid' ? 'bg-white text-sky-700 shadow' : 'text-slate-500 hover:text-slate-800'">
+                  <i class="fa-solid fa-border-all"></i> การ์ด
+                </button>
+                <button @click="specialTaskViewMode = 'table'" class="flex-1 py-1 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1" :class="specialTaskViewMode === 'table' ? 'bg-white text-sky-700 shadow' : 'text-slate-500 hover:text-slate-800'">
+                  <i class="fa-solid fa-list-ul"></i> ตาราง/ลิสต์
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Special Tasks Cards Grid View -->
+          <div x-show="specialTaskViewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <template x-for="task in filteredSpecialTasks" :key="task.id">
+              <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200 hover:border-sky-300 transition-all flex flex-col justify-between space-y-4">
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800" x-text="'ปีการศึกษา ' + task.academicYear"></span>
+                    <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full" :class="task.status === 'ดำเนินการเสร็จสิ้น' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'" x-text="task.status"></span>
+                  </div>
+                  <h3 class="font-bold text-slate-800 text-base" x-text="task.taskTitle"></h3>
+                  <div class="space-y-1 text-xs text-slate-600">
+                    <p class="font-semibold text-blue-900 flex items-center gap-1.5">
+                      <i class="fa-solid fa-user-tag text-sky-500"></i> บทบาท: <span x-text="task.rolePosition"></span>
+                    </p>
+                    <p class="flex items-center gap-1.5" x-show="task.category">
+                      <i class="fa-solid fa-folder-tree text-slate-400"></i> ฝ่าย/หมวดหมู่: <span x-text="task.category"></span>
+                    </p>
+                    <p class="flex items-center gap-1.5" x-show="task.commandNo">
+                      <i class="fa-solid fa-file-signature text-slate-400"></i> คำสั่งเลขที่: <span x-text="task.commandNo"></span>
+                    </p>
+                  </div>
+                  <p class="text-xs text-slate-500 leading-relaxed pt-1" x-text="task.description"></p>
+                </div>
+
+                <div class="pt-3 border-t border-slate-200/80 flex items-center justify-between text-xs">
+                  <div>
+                    <template x-if="task.fileUrl">
+                      <a :href="task.fileUrl" target="_blank" class="text-sky-600 font-bold hover:underline flex items-center gap-1">
+                        <i class="fa-solid fa-paperclip"></i> ดูคำสั่ง/หลักฐาน
+                      </a>
+                    </template>
+                  </div>
+                  <div x-show="viewMode !== 'public'" class="flex items-center space-x-2" x-cloak>
+                    <button @click="openSpecialTaskModal(task)" class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 p-1.5 rounded-lg font-bold">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button @click="confirmDeleteSpecialTask(task.id)" class="bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 p-1.5 rounded-lg font-bold">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Special Tasks Table / List View -->
+          <div x-show="specialTaskViewMode === 'table'" class="overflow-x-auto">
+            <table class="w-full text-xs text-left border-collapse bg-white rounded-xl border border-slate-200">
+              <thead>
+                <tr class="bg-slate-900 text-white font-bold">
+                  <th class="p-3 border-b border-slate-800">ปีการศึกษา</th>
+                  <th class="p-3 border-b border-slate-800">ชื่อโครงการ / งานที่รับผิดชอบ</th>
+                  <th class="p-3 border-b border-slate-800">บทบาทหน้าที่</th>
+                  <th class="p-3 border-b border-slate-800">ฝ่าย/หมวดหมู่</th>
+                  <th class="p-3 border-b border-slate-800">คำสั่งโรงเรียน</th>
+                  <th class="p-3 border-b border-slate-800">สถานะ</th>
+                  <th class="p-3 border-b border-slate-800 text-center">หลักฐาน / จัดการ</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200">
+                <template x-for="task in filteredSpecialTasks" :key="task.id">
+                  <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3 font-semibold text-slate-700 whitespace-nowrap" x-text="task.academicYear"></td>
+                    <td class="p-3 font-bold text-slate-800 max-w-xs">
+                      <div x-text="task.taskTitle"></div>
+                      <div class="text-[11px] text-slate-500 font-normal mt-0.5 line-clamp-1" x-text="task.description"></div>
+                    </td>
+                    <td class="p-3 font-semibold text-blue-900 whitespace-nowrap" x-text="task.rolePosition"></td>
+                    <td class="p-3 text-slate-600 whitespace-nowrap" x-text="task.category || '-'"></td>
+                    <td class="p-3 text-slate-600 font-mono text-[11px] whitespace-nowrap" x-text="task.commandNo || '-'"></td>
+                    <td class="p-3 whitespace-nowrap">
+                      <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full" :class="task.status === 'ดำเนินการเสร็จสิ้น' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'" x-text="task.status"></span>
+                    </td>
+                    <td class="p-3 text-center whitespace-nowrap space-x-1">
+                      <template x-if="task.fileUrl">
+                        <a :href="task.fileUrl" target="_blank" class="inline-block p-1.5 rounded-lg bg-sky-100 text-sky-700 hover:bg-sky-200 transition font-bold" title="ดูเอกสารคำสั่ง">
+                          <i class="fa-solid fa-paperclip"></i>
+                        </a>
+                      </template>
+                      <button x-show="viewMode !== 'public'" @click="openSpecialTaskModal(task)" class="p-1.5 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition font-bold" title="แก้ไข" x-cloak>
+                        <i class="fa-solid fa-pen-to-square"></i>
+                      </button>
+                      <button x-show="viewMode !== 'public'" @click="confirmDeleteSpecialTask(task.id)" class="p-1.5 rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 transition font-bold" title="ลบ" x-cloak>
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: AWARDS & HONORS -->
+      <section x-show="activeTab === 'awards'" class="space-y-6" x-cloak>
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-6">
+            <div>
+              <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-trophy text-amber-500"></i> รางวัล & ผลงานการปฏิบัติงานดีเด่น
+              </h2>
+              <p class="text-xs text-slate-500 mt-0.5">รวมรางวัลเชิดชูเกียรติ ผลงานนวัตกรรม และการได้รับยกย่องจากหน่วยงานต่างๆ</p>
+            </div>
+            <button x-show="viewMode !== 'public'" @click="openAwardModal()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md transition flex items-center gap-1.5 shrink-0" x-cloak>
+              <i class="fa-solid fa-plus"></i> เพิ่มรางวัลผลงาน
+            </button>
+          </div>
+
+          <!-- Awards Filter Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 mb-1">ระดับรางวัล</label>
+              <select x-model="awardLevelFilter" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+                <option value="">-- ทุกระดับรางวัล --</option>
+                <option value="ระดับโรงเรียน">ระดับโรงเรียน</option>
+                <option value="ระดับเขตพื้นที่การศึกษา">ระดับเขตพื้นที่การศึกษา</option>
+                <option value="ระดับจังหวัด">ระดับจังหวัด</option>
+                <option value="ระดับภาค">ระดับภาค</option>
+                <option value="ระดับประเทศ">ระดับประเทศ</option>
+                <option value="ระดับนานาชาติ">ระดับนานาชาติ</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 mb-1">ค้นหารางวัล</label>
+              <input type="text" x-model="awardSearch" placeholder="ค้นหาชื่อรางวัล หรือหน่วยงานมอบ..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+            </div>
+          </div>
+
+          <!-- Awards Showcase Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <template x-for="awd in filteredAwards" :key="awd.id">
+              <div class="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                <div class="relative h-44 overflow-hidden bg-slate-950 flex items-center justify-center">
+                  <template x-if="awd.fileUrl">
+                    <img :src="awd.fileUrl" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                  </template>
+                  <template x-if="!awd.fileUrl">
+                    <div class="text-amber-400 text-5xl">
+                      <i class="fa-solid fa-trophy"></i>
+                    </div>
+                  </template>
+                  <span class="absolute top-3 left-3 text-[10px] font-bold px-2.5 py-1 rounded-md shadow" :class="getAwardBadgeClass(awd.awardLevel)" x-text="awd.awardLevel"></span>
+                  <template x-if="awd.fileUrl">
+                    <button @click="openImagePreview(awd.fileUrl, awd.awardTitle)" class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-bold text-xs gap-1">
+                      <i class="fa-solid fa-magnifying-glass-plus text-base"></i> ดูรูปรางวัล
+                    </button>
+                  </template>
+                </div>
+
+                <div class="p-5 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold px-2.5 py-0.5 rounded bg-amber-100 text-amber-900" x-text="'ปี ' + awd.academicYear"></span>
+                    <span class="text-[11px] text-slate-400" x-text="awd.awardDate"></span>
+                  </div>
+                  <h3 class="font-bold text-slate-800 text-sm leading-snug group-hover:text-amber-600 transition" x-text="awd.awardTitle"></h3>
+                  <p class="text-xs text-slate-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-landmark text-amber-500"></i> หน่วยงานมอบ: <span class="font-medium" x-text="awd.awardingBody"></span>
+                  </p>
+                  <p class="text-xs text-slate-500 leading-relaxed line-clamp-2" x-text="awd.description"></p>
+                </div>
+
+                <div class="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <template x-if="awd.fileUrl">
+                    <a :href="awd.fileUrl" target="_blank" class="text-amber-700 font-bold hover:underline flex items-center gap-1">
+                      <i class="fa-solid fa-external-link"></i> เปิดรูป/เกียรติบัตร
+                    </a>
+                  </template>
+                  <template x-if="!awd.fileUrl"><span></span></template>
+
+                  <div x-show="viewMode !== 'public'" class="flex items-center space-x-2" x-cloak>
+                    <button @click="openAwardModal(awd)" class="text-slate-600 hover:text-slate-900 p-1 font-bold">
+                      <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button @click="confirmDeleteAward(awd.id)" class="text-rose-600 hover:text-rose-800 p-1 font-bold">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: CERTIFICATES LIBRARY -->
+      <section x-show="activeTab === 'certificates'" class="space-y-6" x-cloak>
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-6">
+            <div>
+              <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-certificate text-rose-500"></i> คลังเกียรติบัตร & วุฒิบัตร (Certificates Library)
+              </h2>
+              <p class="text-xs text-slate-500 mt-0.5">รวมเกียรติบัตรผ่านการอบรม การพัฒนาตนเอง วุฒิบัตรวิทยากร และผลงานต่างๆ</p>
+            </div>
+            <button x-show="viewMode !== 'public'" @click="openCertificateModal()" class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md transition flex items-center gap-1.5 shrink-0" x-cloak>
+              <i class="fa-solid fa-plus"></i> เพิ่มเกียรติบัตรใหม่
+            </button>
+          </div>
+
+          <!-- Certificates Filter Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 mb-1">ประเภทเกียรติบัตร</label>
+              <select x-model="certCategoryFilter" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+                <option value="">-- ทั้งหมด --</option>
+                <option value="การพัฒนาตนเอง / การอบรมทางวิชาการ">การอบรม / พัฒนาตนเอง</option>
+                <option value="การเป็นวิทยากร / ผู้เชี่ยวชาญ">การเป็นวิทยากร</option>
+                <option value="การแข่งขัน / นวัตกรรม">การแข่งขัน / นวัตกรรม</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 mb-1">ค้นหาเกียรติบัตร</label>
+              <input type="text" x-model="certSearch" placeholder="พิมพ์ชื่อหลักสูตร หรือหน่วยงานออก..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+            </div>
+          </div>
+
+          <!-- Certificates Gallery Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <template x-for="cert in filteredCertificates" :key="cert.id">
+              <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 cert-card shadow-sm flex flex-col justify-between group">
+                <div class="relative h-48 overflow-hidden bg-slate-900 flex items-center justify-center">
+                  <template x-if="cert.fileUrl">
+                    <img :src="cert.fileUrl" class="w-full h-full object-cover cert-card-img">
+                  </template>
+                  <template x-if="!cert.fileUrl">
+                    <i class="fa-solid fa-award text-rose-400 text-6xl"></i>
+                  </template>
+                  <span class="absolute top-3 left-3 text-[10px] font-bold px-2.5 py-1 rounded bg-rose-600 text-white shadow" x-text="'ปี ' + cert.academicYear"></span>
+                  <button @click="toggleCertHighlight(cert)" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-slate-900/60 text-white flex items-center justify-center hover:bg-amber-500 transition">
+                    <i class="fa-solid fa-star" :class="cert.isHighlight ? 'text-amber-400' : 'text-slate-400'"></i>
+                  </button>
+
+                  <template x-if="cert.fileUrl">
+                    <button @click="openImagePreview(cert.fileUrl, cert.certTitle)" class="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-bold text-xs gap-1.5">
+                      <i class="fa-solid fa-magnifying-glass-plus text-base"></i> คลิกขยายพรีวิว
+                    </button>
+                  </template>
+                </div>
+
+                <div class="p-5 space-y-2">
+                  <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600" x-text="cert.certCategory"></span>
+                  <h3 class="font-bold text-slate-800 text-sm leading-snug group-hover:text-rose-600 transition line-clamp-2" x-text="cert.certTitle"></h3>
+                  <p class="text-xs text-slate-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-building-columns text-slate-400"></i> หน่วยงานออก: <span class="font-medium" x-text="cert.issuer"></span>
+                  </p>
+                </div>
+
+                <div class="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                  <span x-text="cert.issueDate"></span>
+                  <div class="flex items-center space-x-2">
+                    <template x-if="cert.fileUrl">
+                      <a :href="cert.fileUrl" target="_blank" class="text-rose-600 font-bold hover:underline">
+                        เปิดไฟล์
+                      </a>
+                    </template>
+                    <div x-show="viewMode !== 'public'" class="flex items-center space-x-1" x-cloak>
+                      <button @click="openCertificateModal(cert)" class="text-slate-600 hover:text-slate-900 p-1 font-bold">
+                        <i class="fa-solid fa-pen"></i>
+                      </button>
+                      <button @click="confirmDeleteCertificate(cert.id)" class="text-rose-600 hover:text-rose-800 p-1 font-bold">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 6: UPLOAD (Owner Only) -->
+      <section x-show="activeTab === 'upload' && viewMode !== 'public'" class="space-y-6" x-cloak>
+        <div class="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-slate-200 max-w-3xl mx-auto">
+          <div class="border-b border-slate-100 pb-4 mb-6">
+            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-cloud-arrow-up text-sky-600"></i> นำเข้าข้อมูล / อัปโหลดเอกสารผลงาน
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">รองรับไฟล์ PDF, Images, Word, Excel, PPT, ZIP ขนาดไม่เกิน 10MB</p>
+          </div>
+
+          <form @submit.prevent="submitForm()" class="space-y-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">ปีการศึกษา <span class="text-red-500">*</span></label>
+                <select x-model="uploadForm.academicYear" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-blue-600 focus:bg-white transition">
+                  <template x-for="yr in settings.academicYears" :key="yr">
+                    <option :value="yr" x-text="'ปีการศึกษา ' + yr"></option>
+                  </template>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อ-นามสกุล ครูเจ้าของผลงาน <span class="text-red-500">*</span></label>
+                <select x-model="uploadForm.teacherName" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-blue-600 focus:bg-white transition">
+                  <template x-for="tc in settings.teachers" :key="tc">
+                    <option :value="tc" x-text="tc"></option>
+                  </template>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">หมวดหมู่งาน / ด้าน ว.PA <span class="text-red-500">*</span></label>
+              <select x-model="uploadForm.workCategory" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-blue-600 focus:bg-white transition">
+                <template x-for="cat in settings.workCategories" :key="cat">
+                  <option :value="cat" x-text="cat"></option>
+                </template>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อเอกสาร / ชื่อผลงาน <span class="text-red-500">*</span></label>
+              <input type="text" x-model="uploadForm.documentName" placeholder="เช่น แผนการจัดการเรียนรู้ วิทยาการคำนวณ ม.3" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-blue-600 focus:bg-white transition">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">แนบไฟล์เอกสาร <span class="text-red-500">*</span></label>
+              <div 
+                @dragover.prevent="isDragging = true"
+                @dragleave.prevent="isDragging = false"
+                @drop.prevent="handleFileDrop($event)"
+                :class="isDragging ? 'drag-active' : 'border-slate-300 bg-slate-50'"
+                class="border-2 border-dashed rounded-2xl p-8 text-center transition cursor-pointer relative"
+                @click="$refs.fileInput.click()"
+              >
+                <input type="file" x-ref="fileInput" id="fileInput" @change="handleFileSelect($event)" class="hidden" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip">
+                
+                <template x-if="!uploadForm.fileName">
+                  <div class="space-y-2">
+                    <i class="fa-solid fa-cloud-arrow-up text-4xl text-blue-500"></i>
+                    <p class="text-sm font-semibold text-slate-700">ลากไฟล์มาวางที่นี่ หรือ <span class="text-blue-600 underline">คลิกเพื่อเลือกไฟล์</span></p>
+                    <p class="text-xs text-slate-400">PDF, JPG, PNG, DOCX, XLSX, PPTX, ZIP (ไม่เกิน 10MB)</p>
+                  </div>
+                </template>
+
+                <template x-if="uploadForm.fileName">
+                  <div class="flex items-center justify-between bg-white p-4 rounded-xl border border-blue-200 shadow-sm">
+                    <div class="flex items-center space-x-3 text-left">
+                      <i class="fa-solid fa-file-circle-check text-2xl text-emerald-500"></i>
+                      <div>
+                        <p class="text-sm font-bold text-slate-800 truncate max-w-xs md:max-w-md" x-text="uploadForm.fileName"></p>
+                        <p class="text-xs text-slate-400" x-text="uploadForm.mimeType"></p>
+                      </div>
+                    </div>
+                    <button type="button" @click.stop="removeSelectedFile()" class="text-rose-500 hover:text-rose-700 p-2 text-sm font-bold">
+                      <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-2 pt-2">
+              <input type="checkbox" id="isHighlight" x-model="uploadForm.isHighlight" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+              <label for="isHighlight" class="text-xs font-semibold text-slate-700 cursor-pointer">
+                แสดงเป็นผลงานไฮไลต์ในหน้าแรก (Showcase Gallery)
+              </label>
+            </div>
+
+            <div class="pt-4">
+              <button type="submit" :disabled="uploading" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-blue-500/30 transition flex items-center justify-center space-x-2 text-sm">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span x-text="isGasEnvironment ? 'บันทึกข้อมูลและอัปโหลดไปยัง Google Drive' : 'บันทึกข้อมูลเข้าสู่ระบบ (Local Test Mode)'"></span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- TAB 7: MY RECORDS (Owner Only) -->
+      <section x-show="activeTab === 'myrecords' && viewMode !== 'public'" class="space-y-6" x-cloak>
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+            <div>
+              <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-folder-open text-teal-600"></i> คลังเอกสาร & ประวัติการนำเข้าของฉัน
+              </h2>
+              <p class="text-xs text-slate-500 mt-0.5">แสดงรายการเอกสารทั้งหมดที่ล็อกอินส่งเข้าสู่ระบบ</p>
+            </div>
+            <button @click="setTab('upload')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow transition">
+              <i class="fa-solid fa-plus mr-1"></i> นำเข้าไฟล์เพิ่ม
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table id="myRecordsTable" class="w-full text-left text-sm text-slate-600">
+              <thead>
+                <tr>
+                  <th>วันที่/เวลา</th>
+                  <th>ปีการศึกษา</th>
+                  <th>หมวดหมู่งาน ว.PA</th>
+                  <th>ชื่อเอกสาร</th>
+                  <th>Showcase</th>
+                  <th>การจัดการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="item in mySubmissions" :key="item.id">
+                  <tr>
+                    <td x-text="item.timestamp" class="text-xs text-slate-500"></td>
+                    <td class="font-semibold text-slate-700" x-text="item.academicYear"></td>
+                    <td>
+                      <span class="text-xs font-medium px-2.5 py-1 rounded-md bg-slate-100 text-slate-700" x-text="item.workCategory"></span>
+                    </td>
+                    <td class="font-bold text-slate-800" x-text="item.documentName"></td>
+                    <td>
+                      <button @click="toggleHighlightStatus(item)" class="text-xs px-2.5 py-1 rounded-full font-semibold transition" :class="item.isHighlight ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'">
+                        <i class="fa-solid fa-star mr-1" :class="item.isHighlight ? 'text-amber-500' : 'text-slate-400'"></i>
+                        <span x-text="item.isHighlight ? 'ไฮไลต์' : 'ทั่วไป'"></span>
+                      </button>
+                    </td>
+                    <td>
+                      <a :href="item.fileUrl" target="_blank" class="text-blue-600 hover:text-blue-800 text-xs font-bold flex items-center gap-1">
+                        <i class="fa-solid fa-external-link"></i> เปิดไฟล์
+                      </a>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 8: ADMIN MASTER DATA (Admin Mode Only) -->
+      <section x-show="activeTab === 'admin-master' && viewMode !== 'public' && isAdmin" class="space-y-6" x-cloak>
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <div class="border-b border-slate-100 pb-4 mb-6">
+            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-table-list text-amber-600"></i> ศูนย์รวมข้อมูลครูทั้งโรงเรียน (Master Data)
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">สำหรับผู้ดูแลระบบ: ตรวจสอบ แก้ไข และจัดการเอกสารครูทุกคน</p>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table id="masterDataTable" class="w-full text-left text-sm text-slate-600">
+              <thead>
+                <tr>
+                  <th>วันที่/เวลา</th>
+                  <th>ครูผู้ส่ง</th>
+                  <th>ปีการศึกษา</th>
+                  <th>หมวดหมู่งาน</th>
+                  <th>ชื่อเอกสาร</th>
+                  <th>Showcase</th>
+                  <th>การจัดการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="item in allSubmissions" :key="item.id">
+                  <tr>
+                    <td x-text="item.timestamp" class="text-xs text-slate-500"></td>
+                    <td class="font-bold text-slate-800" x-text="item.teacherName"></td>
+                    <td x-text="item.academicYear"></td>
+                    <td>
+                      <span class="text-xs font-medium px-2.5 py-1 rounded-md bg-blue-50 text-blue-700" x-text="item.workCategory"></span>
+                    </td>
+                    <td class="font-semibold text-slate-800" x-text="item.documentName"></td>
+                    <td>
+                      <button @click="toggleHighlightStatus(item)" class="text-xs px-2.5 py-1 rounded-full font-semibold transition" :class="item.isHighlight ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400'">
+                        <i class="fa-solid fa-star mr-1" :class="item.isHighlight ? 'text-amber-500' : ''"></i>
+                        <span x-text="item.isHighlight ? 'โชว์หน้าแรก' : 'ซ่อน'"></span>
+                      </button>
+                    </td>
+                    <td class="flex items-center space-x-2">
+                      <a :href="item.fileUrl" target="_blank" class="bg-blue-50 text-blue-600 hover:bg-blue-100 p-1.5 rounded-lg text-xs font-semibold">
+                        <i class="fa-solid fa-eye"></i>
+                      </a>
+                      <button @click="confirmDeleteSubmission(item.id)" class="bg-rose-50 text-rose-600 hover:bg-rose-100 p-1.5 rounded-lg text-xs font-semibold">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 9: SYSTEM SETTINGS (Admin Mode Only) -->
+      <section x-show="activeTab === 'admin-settings' && viewMode !== 'public' && isAdmin" class="space-y-8" x-cloak>
+        <div class="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-slate-200 max-w-4xl mx-auto space-y-8">
+          <div class="border-b border-slate-100 pb-4">
+            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-gears text-orange-600"></i> ตั้งค่าระบบ & LINE Token (Admin Panel)
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">จัดการตัวเลือก Dropdown รายชื่อครู อีเมล Admin การแสดงผลโลโก้ และสิทธิ์เปิด/ซ่อนส่วนต่างๆ</p>
+          </div>
+
+          <!-- SCHOOL LOGO SETTING -->
+          <div class="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+            <label class="block text-sm font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-school text-blue-600"></i> โลโก้โรงเรียน (School Logo URL)
+            </label>
+            <div class="flex flex-col sm:flex-row items-center gap-4">
+              <img :src="settings.schoolLogoUrl || 'https://cdn-icons-png.flaticon.com/512/2997/2997327.png'" class="w-14 h-14 rounded-xl object-contain bg-white p-1 border border-slate-300 shadow shrink-0">
+              <div class="flex-1 w-full space-y-1">
+                <input type="url" x-model="settings.schoolLogoUrl" placeholder="https://..." class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs outline-none focus:border-blue-600">
+                <p class="text-[11px] text-slate-500">ใส่ URL ลิงก์รูปภาพโลโก้โรงเรียน (เช่น PNG หรือ SVG) เพื่อแสดงบน Sidebar, Header และ Banner หน้าแรก</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION VISIBILITY CONTROLS -->
+          <div class="space-y-4 p-5 bg-gradient-to-br from-slate-50 to-blue-50/40 rounded-2xl border border-slate-200">
+            <div class="flex items-center justify-between border-b border-slate-200/80 pb-3">
+              <div>
+                <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <i class="fa-solid fa-sliders text-blue-600"></i> ปรับแต่งการแสดงผล / ซ่อนส่วนต่างๆ ในเว็บ (Section Visibility Controls)
+                </h3>
+                <p class="text-[11px] text-slate-500 mt-0.5">Admin สามารถคลิกเปิด (ON) หรือซ่อน (OFF) ส่วนประกอบต่างๆ บนหน้าเว็บได้อย่างอิสระ</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <!-- Item 1: Carousel -->
+              <div class="bg-white p-3 rounded-xl border border-slate-200/80 flex items-center justify-between shadow-2xs">
+                <span class="text-xs font-semibold text-slate-700 flex items-center gap-2">
+                  <i class="fa-solid fa-images text-blue-500 w-4"></i> สไลด์กิจกรรมเด่น
+                </span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" x-model="settings.sectionVisibility.showCarousel" class="sr-only peer">
+                  <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <!-- Item 2: Stats Overview -->
+              <div class="bg-white p-3 rounded-xl border border-slate-200/80 flex items-center justify-between shadow-2xs">
+                <span class="text-xs font-semibold text-slate-700 flex items-center gap-2">
+                  <i class="fa-solid fa-chart-pie text-emerald-500 w-4"></i> สถิติการ์ดสรุปตัวเลข
+                </span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" x-model="settings.sectionVisibility.showStatsOverview" class="sr-only peer">
+                  <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <!-- Item 3: Featured Certificates -->
+              <div class="bg-white p-3 rounded-xl border border-slate-200/80 flex items-center justify-between shadow-2xs">
+                <span class="text-xs font-semibold text-slate-700 flex items-center gap-2">
+                  <i class="fa-solid fa-award text-amber-500 w-4"></i> เกียรติบัตรเด่นหน้าแรก
+                </span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" x-model="settings.sectionVisibility.showFeaturedCertificates" class="sr-only peer">
+                  <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <!-- Item 4: Recent Activities -->
+              <div class="bg-white p-3 rounded-xl border border-slate-200/80 flex items-center justify-between shadow-2xs">
+                <span class="text-xs font-semibold text-slate-700 flex items-center gap-2">
+                  <i class="fa-solid fa-camera-retro text-rose-500 w-4"></i> ภาพกิจกรรมล่าสุด
+                </span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" x-model="settings.sectionVisibility.showRecentActivities" class="sr-only peer">
+                  <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <!-- Item 5: Career Timeline -->
+              <div class="bg-white p-3 rounded-xl border border-slate-200/80 flex items-center justify-between shadow-2xs">
+                <span class="text-xs font-semibold text-slate-700 flex items-center gap-2">
+                  <i class="fa-solid fa-timeline text-amber-500 w-4"></i> ไทม์ไลน์การรับราชการ
+                </span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" x-model="settings.sectionVisibility.showCareerTimeline" class="sr-only peer">
+                  <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <!-- Item 6: Timetable -->
+              <div class="bg-white p-3 rounded-xl border border-slate-200/80 flex items-center justify-between shadow-2xs">
+                <span class="text-xs font-semibold text-slate-700 flex items-center gap-2">
+                  <i class="fa-solid fa-calendar-days text-violet-500 w-4"></i> ตารางสอนประจำสัปดาห์
+                </span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" x-model="settings.sectionVisibility.showTimetable" class="sr-only peer">
+                  <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <!-- Item 7: Special Tasks -->
+              <div class="bg-white p-3 rounded-xl border border-slate-200/80 flex items-center justify-between shadow-2xs">
+                <span class="text-xs font-semibold text-slate-700 flex items-center gap-2">
+                  <i class="fa-solid fa-list-check text-sky-500 w-4"></i> งานพิเศษ & โครงการ
+                </span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" x-model="settings.sectionVisibility.showSpecialTasks" class="sr-only peer">
+                  <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <!-- Item 8: Awards -->
+              <div class="bg-white p-3 rounded-xl border border-slate-200/80 flex items-center justify-between shadow-2xs">
+                <span class="text-xs font-semibold text-slate-700 flex items-center gap-2">
+                  <i class="fa-solid fa-trophy text-amber-500 w-4"></i> รางวัล & ผลงานดีเด่น
+                </span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" x-model="settings.sectionVisibility.showAwards" class="sr-only peer">
+                  <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <!-- Item 9: Certificates -->
+              <div class="bg-white p-3 rounded-xl border border-slate-200/80 flex items-center justify-between shadow-2xs">
+                <span class="text-xs font-semibold text-slate-700 flex items-center gap-2">
+                  <i class="fa-solid fa-certificate text-rose-500 w-4"></i> คลังเกียรติบัตร
+                </span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" x-model="settings.sectionVisibility.showCertificates" class="sr-only peer">
+                  <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <label class="block text-sm font-bold text-slate-800">รายชื่อครูในโรงเรียน</label>
+            <div class="flex gap-2">
+              <input type="text" x-model="newTeacherInput" placeholder="เพิ่มชื่อ-นามสกุล ครู..." class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-blue-600">
+              <button type="button" @click="addItem('teachers', 'newTeacherInput')" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-xl text-xs">
+                + เพิ่มครู
+              </button>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-2">
+              <template x-for="(tc, idx) in settings.teachers" :key="idx">
+                <span class="bg-slate-100 text-slate-700 text-xs px-3 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2">
+                  <span x-text="tc"></span>
+                  <button type="button" @click="removeItem('teachers', idx)" class="text-rose-500 hover:text-rose-700 font-bold">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </span>
+              </template>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+            <div class="space-y-3">
+              <label class="block text-sm font-bold text-slate-800">ปีการศึกษา</label>
+              <div class="flex gap-2">
+                <input type="text" x-model="newYearInput" placeholder="เช่น 2569..." class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-blue-600">
+                <button type="button" @click="addItem('academicYears', 'newYearInput')" class="bg-blue-600 text-white font-semibold px-3 py-2 rounded-xl text-xs">
+                  + เพิ่มปี
+                </button>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <template x-for="(yr, idx) in settings.academicYears" :key="idx">
+                  <span class="bg-blue-50 text-blue-700 text-xs px-3 py-1 rounded-lg border border-blue-200 flex items-center gap-2">
+                    <span x-text="'ปี ' + yr"></span>
+                    <button type="button" @click="removeItem('academicYears', idx)" class="text-rose-500 font-bold">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </span>
+                </template>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <label class="block text-sm font-bold text-slate-800">อีเมล Admin</label>
+              <div class="flex gap-2">
+                <input type="email" x-model="newAdminInput" placeholder="admin@school.ac.th..." class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-blue-600">
+                <button type="button" @click="addItem('adminEmails', 'newAdminInput')" class="bg-blue-600 text-white font-semibold px-3 py-2 rounded-xl text-xs">
+                  + เพิ่ม Admin
+                </button>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <template x-for="(adm, idx) in settings.adminEmails" :key="idx">
+                  <span class="bg-amber-50 text-amber-800 text-xs px-3 py-1 rounded-lg border border-amber-200 flex items-center gap-2">
+                    <span x-text="adm"></span>
+                    <button type="button" @click="removeItem('adminEmails', idx)" class="text-rose-500 font-bold">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </span>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <!-- ADMIN PIN PASSCODE SETTINGS -->
+          <div class="space-y-3 pt-5 border-t border-slate-200">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <i class="fa-solid fa-key text-blue-600"></i> รหัส PIN ปลดล็อคหน้าจอ Admin (4-6 หลัก)
+                </label>
+                <p class="text-xs text-slate-500">รหัสผ่านปุ่มกดแป้นตัวเลขสไตล์สมาร์ทโฟน สำหรับยืนยันสิทธิ์ก่อนเข้าสู่เมนูผู้ดูแลระบบ</p>
+              </div>
+              <span class="text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-mono font-semibold border border-blue-200">
+                PIN ปัจจุบัน: <span x-text="settings.adminPin ? '••••' : '1234'"></span>
+              </span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-xl">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">ตั้งรหัส PIN ใหม่</label>
+                <input type="password" maxlength="6" x-model="settings.adminPin" placeholder="เช่น 1234" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-mono tracking-widest outline-none focus:border-blue-600">
+              </div>
+              <div class="flex items-end">
+                <button type="button" @click="testKeypadModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold px-4 py-2.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5 transition">
+                  <i class="fa-solid fa-mobile-screen-button"></i> ทดสอบเปิดหน้าจอกด PIN
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- GOOGLE DRIVE FOLDER DESTINATIONS -->
+          <div class="space-y-4 pt-6 border-t border-slate-200">
+            <div>
+              <label class="block text-sm font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-brands fa-google-drive text-amber-500"></i> ปรับปรุงที่อยู่โฟลเดอร์ Google Drive ปลายทาง
+              </label>
+              <p class="text-xs text-slate-500">สามารถใส่ Folder ID หรือ วาง URL เต็มของโฟลเดอร์ Google Drive เพื่อแยกจัดเก็บไฟล์แต่ละหมวดหมู่อย่างเป็นระเบียบ</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Folder 1: Submissions -->
+              <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <i class="fa-solid fa-folder-open text-blue-600"></i> โฟลเดอร์ผลงาน ว.PA / เอกสารหลัก
+                  </span>
+                  <button type="button" @click="testDriveFolder(settings.folderIdSubmissions, 'ว.PA')" class="text-[11px] text-blue-600 hover:underline font-semibold flex items-center gap-1">
+                    <i class="fa-solid fa-check-double"></i> ตรวจสอบ
+                  </button>
+                </div>
+                <input type="text" x-model="settings.folderIdSubmissions" placeholder="วางลิงก์ Drive หรือ Folder ID ที่นี่..." class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs outline-none focus:border-blue-600">
+                <p class="text-[10px] text-slate-400">ค่าเริ่มต้น: ระบบจะสร้างโฟลเดอร์ 'Teacher_ePortfolio_Submissions' ใน My Drive อัตโนมัติ</p>
+              </div>
+
+              <!-- Folder 2: Certificates -->
+              <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <i class="fa-solid fa-certificate text-amber-500"></i> โฟลเดอร์รูป/ไฟล์เกียรติบัตร
+                  </span>
+                  <button type="button" @click="testDriveFolder(settings.folderIdCertificates, 'เกียรติบัตร')" class="text-[11px] text-amber-600 hover:underline font-semibold flex items-center gap-1">
+                    <i class="fa-solid fa-check-double"></i> ตรวจสอบ
+                  </button>
+                </div>
+                <input type="text" x-model="settings.folderIdCertificates" placeholder="วางลิงก์ Drive หรือ Folder ID ที่นี่..." class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs outline-none focus:border-blue-600">
+                <p class="text-[10px] text-slate-400">โฟลเดอร์เฉพาะสำหรับเก็บไฟล์ภาพและ PDF วุฒิบัตร/เกียรติบัตร</p>
+              </div>
+
+              <!-- Folder 3: Special Tasks -->
+              <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <i class="fa-solid fa-clipboard-list text-purple-600"></i> โฟลเดอร์งานพิเศษ & คำสั่งโรงเรียน
+                  </span>
+                  <button type="button" @click="testDriveFolder(settings.folderIdSpecialTasks, 'งานพิเศษ')" class="text-[11px] text-purple-600 hover:underline font-semibold flex items-center gap-1">
+                    <i class="fa-solid fa-check-double"></i> ตรวจสอบ
+                  </button>
+                </div>
+                <input type="text" x-model="settings.folderIdSpecialTasks" placeholder="วางลิงก์ Drive หรือ Folder ID ที่นี่..." class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs outline-none focus:border-blue-600">
+                <p class="text-[10px] text-slate-400">โฟลเดอร์เก็บเอกสารคำสั่งแต่งตั้งและรายงานกิจกรรมโครงการ</p>
+              </div>
+
+              <!-- Folder 4: Awards -->
+              <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <i class="fa-solid fa-trophy text-rose-500"></i> โฟลเดอร์รางวัล & ผลงานดีเด่น
+                  </span>
+                  <button type="button" @click="testDriveFolder(settings.folderIdAwards, 'รางวัล')" class="text-[11px] text-rose-600 hover:underline font-semibold flex items-center gap-1">
+                    <i class="fa-solid fa-check-double"></i> ตรวจสอบ
+                  </button>
+                </div>
+                <input type="text" x-model="settings.folderIdAwards" placeholder="วางลิงก์ Drive หรือ Folder ID ที่นี่..." class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs outline-none focus:border-blue-600">
+                <p class="text-[10px] text-slate-400">โฟลเดอร์เก็บภาพถ่ายรับรางวัลและเอกสารรับรองเชิดชูเกียรติ</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- UNIVERSAL BOT NOTIFICATION ENGINE -->
+          <div class="space-y-4 pt-6 border-t border-slate-200">
+            <div>
+              <label class="block text-sm font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-bell text-emerald-600"></i> ระบบแจ้งเตือนอัจฉริยะ (Telegram Bot & LINE Bot)
+              </label>
+              <p class="text-xs text-slate-500">สามารถใส่ Bot Token และ Chat ID / Group ID ได้อย่างอิสระ ระบบเชื่อมต่อ API ตรง แจ้งเตือนได้จริง 100%</p>
+            </div>
+
+            <!-- Platform Switcher -->
+            <div class="flex flex-wrap gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <label class="flex items-center gap-2 text-xs font-semibold cursor-pointer text-slate-700">
+                <input type="radio" name="notify_platform" value="telegram" x-model="settings.notifyPlatform" class="text-blue-600">
+                <i class="fa-brands fa-telegram text-sky-500 text-sm"></i> Telegram Bot (แนะนำ - ฟรี & เสถียรสูง)
+              </label>
+              <label class="flex items-center gap-2 text-xs font-semibold cursor-pointer text-slate-700">
+                <input type="radio" name="notify_platform" value="line_bot" x-model="settings.notifyPlatform" class="text-blue-600">
+                <i class="fa-brands fa-line text-emerald-500 text-sm"></i> LINE Messaging API (LINE Bot)
+              </label>
+              <label class="flex items-center gap-2 text-xs font-semibold cursor-pointer text-slate-700">
+                <input type="radio" name="notify_platform" value="line_notify" x-model="settings.notifyPlatform" class="text-blue-600">
+                <i class="fa-solid fa-comment-dots text-emerald-600 text-sm"></i> LINE Notify Token
+              </label>
+            </div>
+
+            <!-- Fields for Telegram / LINE Bot -->
+            <div x-show="settings.notifyPlatform === 'telegram' || settings.notifyPlatform === 'line_bot'" class="grid grid-cols-1 md:grid-cols-2 gap-3" x-cloak>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1" x-text="settings.notifyPlatform === 'telegram' ? 'Telegram Bot Token' : 'LINE Channel Access Token'"></label>
+                <input type="text" x-model="settings.botToken" :placeholder="settings.notifyPlatform === 'telegram' ? 'เช่น 7123456789:AAHk... จาก @BotFather' : 'Channel Access Token จาก LINE Developers'" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs outline-none focus:border-blue-600">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1" x-text="settings.notifyPlatform === 'telegram' ? 'Chat ID / Group ID (กลุ่ม Telegram)' : 'LINE Group ID / User ID'"></label>
+                <input type="text" x-model="settings.groupId" :placeholder="settings.notifyPlatform === 'telegram' ? 'เช่น -1001234567890 หรือ Chat ID' : 'เช่น C123456789...'" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs outline-none focus:border-blue-600">
+              </div>
+            </div>
+
+            <!-- Fields for LINE Notify -->
+            <div x-show="settings.notifyPlatform === 'line_notify'" class="space-y-1" x-cloak>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">LINE Notify Access Token</label>
+              <input type="text" x-model="settings.lineToken" placeholder="วาง LINE Notify Token ที่นี่..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs outline-none focus:border-blue-600">
+            </div>
+
+            <!-- Live Test Notification Button -->
+            <div class="flex items-center justify-between pt-1">
+              <span class="text-[11px] text-slate-400">
+                <i class="fa-solid fa-shield-halved mr-1"></i> แจ้งเตือนอัตโนมัติเมื่อมีครูอัปโหลด ว.PA, เกียรติบัตร, รางวัล หรือบันทึกงานใหม่
+              </span>
+              <button type="button" @click="testNotificationEngine()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2.5 rounded-xl text-xs shadow flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-paper-plane"></i> ทดสอบส่งแจ้งเตือนเดี๋ยวนี้
+              </button>
+            </div>
+          </div>
+
+          <!-- SAVE ALL SETTINGS -->
+          <div class="pt-6 border-t border-slate-100 flex justify-end">
+            <button type="button" @click="saveSystemSettings()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-blue-500/30 transition text-sm">
+              <i class="fa-solid fa-floppy-disk mr-2"></i> บันทึกการตั้งค่าระบบทั้งหมด
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL: MOBILE PHONE PIN KEYPAD UNLOCK SCREEN -->
+  <div x-show="pinModalOpen" class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 flex items-center justify-center p-4 backdrop-blur-md" x-cloak>
+    <div @click.away="closePinModal()" class="relative bg-slate-900/90 border border-slate-700/60 rounded-3xl max-w-sm w-full p-6 shadow-2xl text-center space-y-6 text-white transform transition-all">
+      <!-- Close Button -->
+      <button type="button" @click="closePinModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <!-- Lock Header -->
+      <div class="space-y-2 pt-2">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-blue-500/20 border border-blue-500/40 text-blue-400 flex items-center justify-center text-2xl shadow-lg shadow-blue-500/10">
+          <i :class="isAdminUnlocked ? 'fa-solid fa-lock-open text-emerald-400' : 'fa-solid fa-lock'"></i>
+        </div>
+        <h3 class="text-base font-bold text-slate-100 tracking-wide">
+          <span x-text="isAdminUnlocked ? 'ระบบผู้ดูแลปลดล็อคอยู่' : 'ใส่รหัส PIN เพื่อปลดล็อค'"></span>
+        </h3>
+        <p class="text-xs text-slate-400">
+          <span x-text="isAdminUnlocked ? 'คุณมีสิทธิ์เข้าถึงเมนู Admin ครบทุกฟังก์ชัน' : 'กรุณากดรหัสตัวเลข 4 หลักเพื่อเข้าจัดการระบบ'"></span>
+        </p>
+      </div>
+
+      <!-- PIN Indicator Dots / Bubbles -->
+      <div class="flex items-center justify-center gap-4 py-2" :class="{ 'shake-pin': pinShake }">
+        <div class="pin-bubble" :class="{ 'filled': enteredPin.length >= 1 }"></div>
+        <div class="pin-bubble" :class="{ 'filled': enteredPin.length >= 2 }"></div>
+        <div class="pin-bubble" :class="{ 'filled': enteredPin.length >= 3 }"></div>
+        <div class="pin-bubble" :class="{ 'filled': enteredPin.length >= 4 }"></div>
+      </div>
+
+      <!-- Error message -->
+      <div x-show="pinError" class="text-xs text-rose-400 font-medium py-1 px-3 bg-rose-500/10 border border-rose-500/30 rounded-xl" x-cloak>
+        <i class="fa-solid fa-circle-exclamation mr-1"></i> <span x-text="pinErrorMessage || 'รหัส PIN ไม่ถูกต้อง'"></span>
+      </div>
+
+      <!-- Phone Number Dialpad (3x4 Grid) -->
+      <div class="grid grid-cols-3 gap-3 px-2">
+        <button type="button" @click="pressPinDigit('1')" class="keypad-btn">1</button>
+        <button type="button" @click="pressPinDigit('2')" class="keypad-btn">2</button>
+        <button type="button" @click="pressPinDigit('3')" class="keypad-btn">3</button>
+
+        <button type="button" @click="pressPinDigit('4')" class="keypad-btn">4</button>
+        <button type="button" @click="pressPinDigit('5')" class="keypad-btn">5</button>
+        <button type="button" @click="pressPinDigit('6')" class="keypad-btn">6</button>
+
+        <button type="button" @click="pressPinDigit('7')" class="keypad-btn">7</button>
+        <button type="button" @click="pressPinDigit('8')" class="keypad-btn">8</button>
+        <button type="button" @click="pressPinDigit('9')" class="keypad-btn">9</button>
+
+        <button type="button" @click="clearPin()" class="keypad-btn !text-rose-400 hover:!bg-rose-500/20 text-base font-bold" title="ล้างรหัส">C</button>
+        <button type="button" @click="pressPinDigit('0')" class="keypad-btn">0</button>
+        <button type="button" @click="backspacePin()" class="keypad-btn !text-amber-400 hover:!bg-amber-500/20 text-base" title="ลบหลักล่าสุด">
+          <i class="fa-solid fa-delete-left"></i>
+        </button>
+      </div>
+
+      <!-- Footer & Default PIN Hint -->
+      <div class="pt-2 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
+        <button type="button" @click="verifyEnteredPin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-xl shadow transition text-xs flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i> ยืนยันรหัส PIN
+        </button>
+      </div>
+      <p class="text-[10px] text-slate-500 text-center -mt-3">
+        * รหัสเริ่มต้นจากระบบ: <span class="font-mono text-slate-400 font-semibold">1234</span> (สามารถเปลี่ยนได้ที่เมนู ตั้งค่าระบบ)
+      </p>
+    </div>
+  </div>
+
+  <!-- MODAL: EDIT USER PROFILE -->
+  <div x-show="profileModalOpen" class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 flex items-center justify-center p-4 backdrop-blur-sm" x-cloak>
+    <div @click.away="profileModalOpen = false" class="bg-white rounded-2xl max-w-2xl w-full p-6 md:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-user-pen text-blue-600"></i> แก้ไขข้อมูลโปรไฟล์ & ไทม์ไลน์ครู
+        </h3>
+        <button @click="profileModalOpen = false" class="text-slate-400 hover:text-slate-600 text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form @submit.prevent="saveProfileModal()" class="space-y-5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อ-นามสกุล</label>
+          <input type="text" x-model="editProfile.fullName" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-blue-600">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ตำแหน่ง / วิทยฐานะ</label>
+            <input type="text" x-model="editProfile.position" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-blue-600">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">โรงเรียน / สังกัด</label>
+            <input type="text" x-model="editProfile.school" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-blue-600">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">URL รูปภาพโปรไฟล์ (Profile Image URL)</label>
+            <input type="url" x-model="editProfile.imageUrl" placeholder="https://..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-blue-600">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">URL โลโก้โรงเรียน (School Logo URL)</label>
+            <input type="url" x-model="editProfile.schoolLogoUrl" placeholder="https://..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-blue-600">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">คติประจำใจ</label>
+          <input type="text" x-model="editProfile.motto" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-blue-600">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">ประวัติโดยย่อ / ผลงานเด่น</label>
+          <textarea x-model="editProfile.bio" rows="3" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-blue-600"></textarea>
+        </div>
+
+        <!-- CAREER TIMELINE EDITOR -->
+        <div class="pt-4 border-t border-slate-100 space-y-4">
+          <div class="flex items-center justify-between">
+            <label class="block text-sm font-bold text-slate-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-timeline text-amber-500"></i> จัดการไทม์ไลน์การรับราชการ (Career Progression)
+            </label>
+            <button type="button" @click="addTimelineItem()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow flex items-center gap-1">
+              <i class="fa-solid fa-plus"></i> เพิ่มช่วงเวลา
+            </button>
+          </div>
+
+          <div class="space-y-3">
+            <template x-for="(tItem, tIdx) in editProfile.careerTimeline" :key="tIdx">
+              <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-xs font-bold text-slate-700" x-text="'ลำดับที่ ' + (tIdx + 1)"></span>
+                  <button type="button" @click="removeTimelineItem(tIdx)" class="text-rose-500 hover:text-rose-700 text-xs font-bold flex items-center gap-1">
+                    <i class="fa-solid fa-trash-can"></i> ลบช่วงเวลานี้
+                  </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div>
+                    <label class="block text-[11px] text-slate-500 mb-0.5">ปี / ช่วงเวลา</label>
+                    <input type="text" x-model="tItem.year" placeholder="เช่น 2562 - 2565" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] text-slate-500 mb-0.5">ตำแหน่ง / วิทยฐานะ</label>
+                    <input type="text" x-model="tItem.position" placeholder="เช่น ครู (คศ.1)" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] text-slate-500 mb-0.5">โรงเรียน / สถานศึกษา</label>
+                    <input type="text" x-model="tItem.school" placeholder="เช่น โรงเรียนตัวอย่างวิทยา" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs outline-none">
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div class="sm:col-span-2">
+                    <label class="block text-[11px] text-slate-500 mb-0.5">รายละเอียดผลงาน / ภาระงาน</label>
+                    <input type="text" x-model="tItem.details" placeholder="รายละเอียดภาระงานหรือความก้าวหน้า..." class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs outline-none">
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label class="block text-[11px] text-slate-500 mb-0.5">ไอคอน</label>
+                      <select x-model="tItem.icon" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs outline-none">
+                        <option value="fa-seedling">🌱 ต้นกล้า</option>
+                        <option value="fa-user-graduate">🎓 นักศึกษา</option>
+                        <option value="fa-award">🏆 รางวัล</option>
+                        <option value="fa-medal">🎖️ เหรียญ</option>
+                        <option value="fa-school">🏫 โรงเรียน</option>
+                        <option value="fa-star">⭐ ดาว</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-[11px] text-slate-500 mb-0.5">สี Badge</label>
+                      <select x-model="tItem.color" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs outline-none">
+                        <option value="blue">🔵 ฟ้า/น้ำเงิน</option>
+                        <option value="emerald">🟢 เขียว</option>
+                        <option value="amber">🟠 ส้ม/ทอง</option>
+                        <option value="rose">🔴 แดง/ชมพู</option>
+                        <option value="violet">🟣 ม่วง</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex justify-end space-x-3">
+          <button type="button" @click="profileModalOpen = false" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            ยกเลิก
+          </button>
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-md">
+            บันทึกการเปลี่ยนแปลง
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: EDIT TIMETABLE SLOT -->
+  <div x-show="timetableModalOpen" class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 flex items-center justify-center p-4 backdrop-blur-sm" x-cloak>
+    <div @click.away="timetableModalOpen = false" class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-pen-to-square text-violet-600"></i> จัดการคาบเรียนในตารางสอน
+        </h3>
+        <button @click="timetableModalOpen = false" class="text-slate-400 hover:text-slate-600 text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form @submit.prevent="saveTimetableSlot()" class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">วันสอน</label>
+            <select x-model="editSlot.day" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+              <template x-for="d in weekDays" :key="d.id">
+                <option :value="d.id" x-text="d.name"></option>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">คาบเรียนที่</label>
+            <select x-model="editSlot.period" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+              <template x-for="p in 7" :key="p">
+                <option :value="p" x-text="'คาบที่ ' + p"></option>
+              </template>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อรายวิชา</label>
+          <input type="text" x-model="editSlot.subject" placeholder="เช่น วิทยาการคำนวณ 3" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">รหัสวิชา</label>
+            <input type="text" x-model="editSlot.code" placeholder="เช่น ว23103" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ระดับชั้นเรียน</label>
+            <input type="text" x-model="editSlot.room" placeholder="เช่น ม.3/1" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ห้องเรียน / อาคาร</label>
+            <input type="text" x-model="editSlot.building" placeholder="เช่น 432 / อาคาร 4" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ประเภทวิชา</label>
+            <select x-model="editSlot.type" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+              <option value="basic">วิชาพื้นฐาน (สีฟ้า)</option>
+              <option value="additional">วิชาเพิ่มเติม (สีเขียว)</option>
+              <option value="activity">กิจกรรม/โฮมรูม (สีส้ม)</option>
+              <option value="club">PLC/ชุมนุม (สีม่วง)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex justify-between">
+          <button type="button" @click="deleteTimetableSlot()" class="bg-rose-50 text-rose-600 hover:bg-rose-100 px-4 py-2 rounded-xl text-xs font-bold">
+            <i class="fa-solid fa-trash mr-1"></i> ลบคาบนี้
+          </button>
+          <div class="flex space-x-2">
+            <button type="button" @click="timetableModalOpen = false" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+              ยกเลิก
+            </button>
+            <button type="submit" class="bg-violet-600 hover:bg-violet-700 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-md">
+              บันทึกคาบเรียน
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  <!-- MODAL: SPECIAL TASK / PROJECT -->
+  <div x-show="specialTaskModalOpen" class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 flex items-center justify-center p-4 backdrop-blur-sm" x-cloak>
+    <div @click.away="specialTaskModalOpen = false" class="bg-white rounded-2xl max-w-xl w-full p-6 md:p-8 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-sky-600"></i> บันทึกงานพิเศษ / โครงการที่ได้รับมอบหมาย
+        </h3>
+        <button @click="specialTaskModalOpen = false" class="text-slate-400 hover:text-slate-600 text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form @submit.prevent="saveSpecialTaskModal()" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ปีการศึกษา <span class="text-red-500">*</span></label>
+            <select x-model="editSpecialTask.academicYear" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+              <template x-for="yr in settings.academicYears" :key="yr">
+                <option :value="yr" x-text="'ปีการศึกษา ' + yr"></option>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">สถานะโครงการ/งาน <span class="text-red-500">*</span></label>
+            <select x-model="editSpecialTask.status" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+              <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
+              <option value="ดำเนินการเสร็จสิ้น">ดำเนินการเสร็จสิ้น</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อโครงการ / งานพิเศษที่รับผิดชอบ <span class="text-red-500">*</span></label>
+          <input type="text" x-model="editSpecialTask.taskTitle" placeholder="เช่น โครงการพัฒนาศักยภาพผู้เรียนด้านคอมพิวเตอร์" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-sky-600">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">บทบาท / ตำแหน่ง <span class="text-red-500">*</span></label>
+            <input type="text" x-model="editSpecialTask.rolePosition" placeholder="เช่น หัวหน้าโครงการ / ครูประจำชั้น" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-sky-600">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ฝ่าย / หมวดหมู่งาน</label>
+            <input type="text" x-model="editSpecialTask.category" placeholder="เช่น งานวิชาการ / กิจกรรมผู้เรียน" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-sky-600">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">คำสั่งโรงเรียน / คำสั่งมอบหมายงานเลขที่</label>
+          <input type="text" x-model="editSpecialTask.commandNo" placeholder="เช่น คำสั่งโรงเรียนที่ 124/2567" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-sky-600">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">รายละเอียดงาน / ผลการดำเนินงานโดยย่อ</label>
+          <textarea x-model="editSpecialTask.description" rows="2" placeholder="อธิบายสรุปภาระงาน การจัดกิจกรรม หรือผลสัมฤทธิ์..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-sky-600"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">แนบไฟล์คำสั่ง / เอกสารอ้างอิง</label>
+          <input type="file" @change="handleModalFileSelect($event, 'editSpecialTask')" class="w-full text-xs text-slate-500 bg-slate-50 border border-slate-300 rounded-xl p-2">
+          <template x-if="editSpecialTask.fileName">
+            <p class="text-[11px] text-emerald-600 mt-1 font-semibold flex items-center gap-1"><i class="fa-solid fa-check"></i> เลือกไฟล์: <span x-text="editSpecialTask.fileName"></span></p>
+          </template>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex justify-end space-x-3">
+          <button type="button" @click="specialTaskModalOpen = false" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            ยกเลิก
+          </button>
+          <button type="submit" class="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-md">
+            บันทึกข้อมูล
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: AWARD -->
+  <div x-show="awardModalOpen" class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 flex items-center justify-center p-4 backdrop-blur-sm" x-cloak>
+    <div @click.away="awardModalOpen = false" class="bg-white rounded-2xl max-w-xl w-full p-6 md:p-8 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-trophy text-amber-500"></i> บันทึกรางวัล & ผลงานดีเด่น
+        </h3>
+        <button @click="awardModalOpen = false" class="text-slate-400 hover:text-slate-600 text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form @submit.prevent="saveAwardModal()" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ปีการศึกษา <span class="text-red-500">*</span></label>
+            <select x-model="editAward.academicYear" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+              <template x-for="yr in settings.academicYears" :key="yr">
+                <option :value="yr" x-text="'ปีการศึกษา ' + yr"></option>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ระดับรางวัล <span class="text-red-500">*</span></label>
+            <select x-model="editAward.awardLevel" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+              <option value="ระดับโรงเรียน">ระดับโรงเรียน</option>
+              <option value="ระดับเขตพื้นที่การศึกษา">ระดับเขตพื้นที่การศึกษา</option>
+              <option value="ระดับจังหวัด">ระดับจังหวัด</option>
+              <option value="ระดับภาค">ระดับภาค</option>
+              <option value="ระดับประเทศ">ระดับประเทศ</option>
+              <option value="ระดับนานาชาติ">ระดับนานาชาติ</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อรางวัล / ผลงานดีเด่น <span class="text-red-500">*</span></label>
+          <input type="text" x-model="editAward.awardTitle" placeholder="เช่น รางวัลครูผู้สอนดีเด่น ด้านนวัตกรรมสื่อเทคโนโลยี" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-amber-600">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">หน่วยงานที่มอบ <span class="text-red-500">*</span></label>
+            <input type="text" x-model="editAward.awardingBody" placeholder="เช่น สำนักงานเขตพื้นที่การศึกษา" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-amber-600">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">วันที่ได้รับรางวัล</label>
+            <input type="date" x-model="editAward.awardDate" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-amber-600">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">คำอธิบายรางวัล / รายละเอียดเพิ่มเติม</label>
+          <textarea x-model="editAward.description" rows="2" placeholder="รายละเอียดของผลงาน นวัตกรรม หรือการเข้ารับรางวัล..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-amber-600"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">อัปโหลดรูปรางวัล / โล่ / เกียรติบัตรรางวัล</label>
+          <input type="file" @change="handleModalFileSelect($event, 'editAward')" accept="image/*,.pdf" class="w-full text-xs text-slate-500 bg-slate-50 border border-slate-300 rounded-xl p-2">
+          <template x-if="editAward.fileName">
+            <p class="text-[11px] text-emerald-600 mt-1 font-semibold flex items-center gap-1"><i class="fa-solid fa-check"></i> เลือกไฟล์: <span x-text="editAward.fileName"></span></p>
+          </template>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex justify-end space-x-3">
+          <button type="button" @click="awardModalOpen = false" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            ยกเลิก
+          </button>
+          <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-md">
+            บันทึกรางวัล
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CERTIFICATE -->
+  <div x-show="certificateModalOpen" class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 flex items-center justify-center p-4 backdrop-blur-sm" x-cloak>
+    <div @click.away="certificateModalOpen = false" class="bg-white rounded-2xl max-w-xl w-full p-6 md:p-8 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-certificate text-rose-500"></i> บันทึกเกียรติบัตร / วุฒิบัตร
+        </h3>
+        <button @click="certificateModalOpen = false" class="text-slate-400 hover:text-slate-600 text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form @submit.prevent="saveCertificateModal()" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ปีการศึกษา <span class="text-red-500">*</span></label>
+            <select x-model="editCertificate.academicYear" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+              <template x-for="yr in settings.academicYears" :key="yr">
+                <option :value="yr" x-text="'ปีการศึกษา ' + yr"></option>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ประเภทเกียรติบัตร <span class="text-red-500">*</span></label>
+            <select x-model="editCertificate.certCategory" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none">
+              <option value="การพัฒนาตนเอง / การอบรมทางวิชาการ">การพัฒนาตนเอง / การอบรมทางวิชาการ</option>
+              <option value="การเป็นวิทยากร / ผู้เชี่ยวชาญ">การเป็นวิทยากร / ผู้เชี่ยวชาญ</option>
+              <option value="การแข่งขัน / นวัตกรรม">การแข่งขัน / นวัตกรรม</option>
+              <option value="อื่นๆ">อื่นๆ</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อเกียรติบัตร / ชื่อหลักสูตรอบรม <span class="text-red-500">*</span></label>
+          <input type="text" x-model="editCertificate.certTitle" placeholder="เช่น ผ่านการอบรมการสร้างสื่อการสอนด้วย AI" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-rose-600">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">หน่วยงานที่ออกเกียรติบัตร <span class="text-red-500">*</span></label>
+            <input type="text" x-model="editCertificate.issuer" placeholder="เช่น กระทรวงศึกษาธิการ / มหาวิทยาลัย..." required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-rose-600">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">วันที่ออกเกียรติบัตร</label>
+            <input type="date" x-model="editCertificate.issueDate" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-rose-600">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">อัปโหลดรูปภาพเกียรติบัตร / ไฟล์ PDF</label>
+          <input type="file" @change="handleModalFileSelect($event, 'editCertificate')" accept="image/*,.pdf" class="w-full text-xs text-slate-500 bg-slate-50 border border-slate-300 rounded-xl p-2">
+          <template x-if="editCertificate.fileName">
+            <p class="text-[11px] text-emerald-600 mt-1 font-semibold flex items-center gap-1"><i class="fa-solid fa-check"></i> เลือกไฟล์: <span x-text="editCertificate.fileName"></span></p>
+          </template>
+        </div>
+
+        <div class="flex items-center space-x-2 pt-1">
+          <input type="checkbox" id="certHighlight" x-model="editCertificate.isHighlight" class="w-4 h-4 text-amber-500 rounded border-slate-300">
+          <label for="certHighlight" class="text-xs font-semibold text-slate-700 cursor-pointer">
+            แสดงเป็นเกียรติบัตรเด่นในหน้าแรก (Highlight Showcase)
+          </label>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex justify-end space-x-3">
+          <button type="button" @click="certificateModalOpen = false" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            ยกเลิก
+          </button>
+          <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-md">
+            บันทึกเกียรติบัตร
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: LIGHTBOX IMAGE PREVIEW -->
+  <div x-show="previewImageModal.open" class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 flex flex-col items-center justify-center p-4 backdrop-blur-md" x-cloak>
+    <div class="relative max-w-4xl w-full flex flex-col items-center space-y-3">
+      <div class="flex items-center justify-between w-full text-white px-2">
+        <h3 class="font-bold text-sm md:text-base truncate pr-4" x-text="previewImageModal.title"></h3>
+        <button @click="previewImageModal.open = false" class="text-slate-300 hover:text-white text-2xl font-bold p-1">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="bg-slate-900 rounded-2xl overflow-hidden shadow-2xl max-h-[80vh] flex items-center justify-center border border-slate-700">
+        <img :src="previewImageModal.url" class="max-h-[75vh] w-auto object-contain rounded-xl">
+      </div>
+      <div class="flex items-center space-x-4 pt-1">
+        <a :href="previewImageModal.url" target="_blank" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md transition flex items-center gap-1.5">
+          <i class="fa-solid fa-external-link"></i> เปิดไฟล์ขนาดเต็ม
+        </a>
+        <button @click="previewImageModal.open = false" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold px-4 py-2 rounded-xl text-xs border border-slate-700">
+          ปิดหน้าต่าง
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HYBRID DUAL-MODE JAVASCRIPT ENGINE -->
+  <script>
+    document.addEventListener('alpine:init', () => {
+      Alpine.data('app', () => ({
+        loading: true,
+        sidebarOpen: false,
+        activeTab: 'showcase',
+        viewMode: 'public', // Default Mode: 'public' (บุคคลทั่วไป) or 'owner' (เจ้าของ/Admin)
+        isAdmin: true,
+        activeEmail: 'teacher@school.ac.th',
+        isGasEnvironment: false,
+
+        // Carousel Slider State
+        currentSlide: 0,
+        carouselSlides: [
+          {
+            image: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=1200',
+            tag: 'ภาพกิจกรรมเด่น',
+            title: 'นวัตกรรมจัดการเรียนรู้ สู่การพัฒนาสมรรถนะผู้เรียนยุคใหม่',
+            description: 'กิจกรรมการเรียนรู้แบบ Active Learning วิทยาการคำนวณและเทคโนโลยีหุ่นยนต์ สำหรับนักเรียนมัธยมศึกษา'
+          },
+          {
+            image: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=1200',
+            tag: 'ผลงาน ว.PA',
+            title: 'การพัฒนาแผนจัดการเรียนรู้ตามหลักเกณฑ์ ว.PA (3 ด้าน 15 ตัวชี้วัด)',
+            description: 'สร้างสรรค์นวัตกรรมการสอน สื่อดิจิทัล และการวัดผลประเมินผลตามสภาพจริง เพื่อการพัฒนาสถานศึกษา'
+          },
+          {
+            image: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=1200',
+            tag: 'รางวัลและความภาคภูมิใจ',
+            title: 'เกียรติบัตรรางวัลครูดีเด่น ด้านเทคโนโลยีและนวัตกรรมการสอน',
+            description: 'เข้าร่วมการอบรมและได้รับรางวัลผลงานนวัตกรรมการจัดการเรียนรู้ระดับเขตพื้นที่การศึกษา'
+          }
+        ],
+
+        // Recent Activity Photos Grid Data
+        recentActivities: [
+          {
+            title: 'อบรมเชิงปฏิบัติการ AI สำหรับการจัดการเรียนรู้ครูยุคใหม่',
+            date: '12 ส.ค. 2567',
+            location: 'หอประชุมโรงเรียนตัวอย่างวิทยา',
+            image: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=600'
+          },
+          {
+            title: 'กิจกรรมโฮมรูมและสุ่มเยี่ยมบ้านนักเรียนชั้น ม.3/1',
+            date: '05 ส.ค. 2567',
+            location: 'ชุมชนเขตพื้นที่โรงเรียน',
+            image: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80&w=600'
+          },
+          {
+            title: 'นำนักเรียนเข้าร่วมการแข่งขันการเขียนโปรแกรมคอมพิวเตอร์',
+            date: '24 ก.ค. 2567',
+            location: 'มหาวิทยาลัยเทคโนโลยี',
+            image: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&q=80&w=600'
+          },
+          {
+            title: 'ชุมชนการเรียนรู้ทางวิชาชีพ (PLC) กลุ่มสาระวิทยาศาสตร์',
+            date: '15 ก.ค. 2567',
+            location: 'ห้องประชุมวิชาการ',
+            image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=600'
+          }
+        ],
+
+        // Timetable Data
+        weekDays: [
+          { id: 'mon', name: 'จันทร์', color: 'bg-amber-500' },
+          { id: 'tue', name: 'อังคาร', color: 'bg-rose-500' },
+          { id: 'wed', name: 'พุธ', color: 'bg-emerald-600' },
+          { id: 'thu', name: 'พฤหัสฯ', color: 'bg-orange-500' },
+          { id: 'fri', name: 'ศุกร์', color: 'bg-sky-500' }
+        ],
+
+        timetableSlots: [
+          { day: 'mon', period: 1, subject: 'วิทยาการคำนวณ 3', code: 'ว23103', room: 'ม.3/1', building: '432', type: 'basic' },
+          { day: 'mon', period: 2, subject: 'วิทยาการคำนวณ 3', code: 'ว23103', room: 'ม.3/1', building: '432', type: 'basic' },
+          { day: 'mon', period: 5, subject: 'การเขียนโปรแกรม', code: 'ว20202', room: 'ม.3/3', building: '435', type: 'additional' },
+          { day: 'tue', period: 3, subject: 'วิทยาการคำนวณ 2', code: 'ว22103', room: 'ม.2/1', building: '432', type: 'basic' },
+          { day: 'tue', period: 4, subject: 'วิทยาการคำนวณ 2', code: 'ว22103', room: 'ม.2/1', building: '432', type: 'basic' },
+          { day: 'tue', period: 7, subject: 'กิจกรรมโฮมรูม', code: 'ก20901', room: 'ม.3/1', building: '432', type: 'activity' },
+          { day: 'wed', period: 1, subject: 'การออกแบบเทคโนโลยี', code: 'ว21103', room: 'ม.1/2', building: '431', type: 'basic' },
+          { day: 'wed', period: 6, subject: 'ชุมนุมคอมพิวเตอร์', code: 'ก20902', room: 'ม.ต้น', building: '435', type: 'club' },
+          { day: 'thu', period: 2, subject: 'วิทยาการคำนวณ 3', code: 'ว23103', room: 'ม.3/2', building: '432', type: 'basic' },
+          { day: 'thu', period: 3, subject: 'วิทยาการคำนวณ 3', code: 'ว23103', room: 'ม.3/2', building: '432', type: 'basic' },
+          { day: 'thu', period: 7, subject: 'ประชุม PLC ครู', code: 'PLC', room: 'คณะครู', building: 'ห้องวิชาการ', type: 'club' },
+          { day: 'fri', period: 4, subject: 'การเขียนโปรแกรม', code: 'ว20202', room: 'ม.3/4', building: '435', type: 'additional' },
+          { day: 'fri', period: 5, subject: 'การเขียนโปรแกรม', code: 'ว20202', room: 'ม.3/4', building: '435', type: 'additional' }
+        ],
+
+        timetableModalOpen: false,
+        editSlot: { day: 'mon', period: 1, subject: '', code: '', room: '', building: '', type: 'basic' },
+
+        profile: {
+          fullName: '',
+          position: '',
+          school: '',
+          motto: '',
+          bio: '',
+          imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300',
+          schoolLogoUrl: 'https://cdn-icons-png.flaticon.com/512/2997/2997327.png',
+          careerTimeline: []
+        },
+
+        // ADMIN PIN & SECURITY KEYPAD STATE
+        isAdminUnlocked: false,
+        pinModalOpen: false,
+        enteredPin: '',
+        pinError: false,
+        pinShake: false,
+        pinErrorMessage: '',
+        pendingAdminAction: null,
+
+        stats: { totalSubmissions: 0, totalCertificates: 0, cat1Count: 0, cat2Count: 0, cat3Count: 0, catOtherCount: 0, totalSpecialTasks: 0, totalAwards: 0 },
+        settings: {
+          teachers: [],
+          academicYears: ['2568', '2567'],
+          workCategories: ['ด้านที่ 1: การจัดการเรียนรู้', 'ด้านที่ 2: การส่งเสริมและสนับสนุน', 'ด้านที่ 3: การพัฒนาตนเองและวิชาชีพ', 'ทั่วไป / เอกสารอื่นๆ'],
+          adminEmails: [],
+          lineToken: '',
+          adminPin: '1234',
+          notifyPlatform: 'telegram',
+          botToken: '',
+          groupId: '',
+          folderIdSubmissions: '',
+          folderIdCertificates: '',
+          folderIdSpecialTasks: '',
+          folderIdAwards: '',
+          schoolLogoUrl: 'https://cdn-icons-png.flaticon.com/512/2997/2997327.png',
+          sectionVisibility: {
+            showCarousel: true,
+            showStatsOverview: true,
+            showFeaturedCertificates: true,
+            showRecentActivities: true,
+            showWorkRatioChart: true,
+            showCareerTimeline: true,
+            showTimetable: true,
+            showSpecialTasks: true,
+            showAwards: true,
+            showCertificates: true
+          }
+        },
+
+        showcaseItems: [],
+        mySubmissions: [],
+        allSubmissions: [],
+        specialTasks: [],
+        awards: [],
+        certificates: [],
+
+        specialTaskViewMode: 'grid', // 'grid' | 'table'
+        specialTaskYearFilter: '',
+        specialTaskSearch: '',
+        awardLevelFilter: '',
+        awardSearch: '',
+        certCategoryFilter: '',
+        certSearch: '',
+
+        specialTaskModalOpen: false,
+        editSpecialTask: { academicYear: '', status: 'กำลังดำเนินการ', taskTitle: '', rolePosition: '', category: '', commandNo: '', description: '', fileName: '', mimeType: '', fileBase64: '' },
+
+        awardModalOpen: false,
+        editAward: { academicYear: '', awardLevel: 'ระดับโรงเรียน', awardTitle: '', awardingBody: '', awardDate: '', description: '', fileName: '', mimeType: '', fileBase64: '' },
+
+        certificateModalOpen: false,
+        editCertificate: { academicYear: '', certCategory: 'การพัฒนาตนเอง / การอบรมทางวิชาการ', certTitle: '', issuer: '', issueDate: '', isHighlight: true, fileName: '', mimeType: '', fileBase64: '' },
+
+        previewImageModal: { open: false, url: '', title: '' },
+
+        uploadForm: { academicYear: '2567', teacherName: 'นายสมชาย ใจดี', workCategory: 'ด้านที่ 1: การจัดการเรียนรู้', documentName: '', fileName: '', mimeType: '', fileBase64: '', isHighlight: true },
+        isDragging: false, uploading: false, profileModalOpen: false, editProfile: {},
+
+        newTeacherInput: '', newYearInput: '', newCatInput: '', newAdminInput: '',
+        chartInstance: null, myDataTable: null, masterDataTable: null,
+
+        init() {
+          this.isGasEnvironment = (typeof google !== 'undefined' && google.script && typeof google.script.run !== 'undefined');
+          this.loadSystemData();
+          this.startCarousel();
+        },
+
+        addTimelineItem() {
+          if (!this.editProfile.careerTimeline) this.editProfile.careerTimeline = [];
+          this.editProfile.careerTimeline.push({
+            year: '2567',
+            position: 'ตำแหน่งงานใหม่',
+            school: this.editProfile.school || 'โรงเรียนตัวอย่างวิทยา',
+            details: 'รายละเอียดภาระงานหรือผลงานการปฏิบัติงาน',
+            icon: 'fa-award',
+            color: 'blue'
+          });
+        },
+
+        removeTimelineItem(index) {
+          if (this.editProfile.careerTimeline) {
+            this.editProfile.careerTimeline.splice(index, 1);
+          }
+        },
+
+        get filteredSpecialTasks() {
+          return this.specialTasks.filter(item => {
+            const matchYear = !this.specialTaskYearFilter || item.academicYear === this.specialTaskYearFilter;
+            const matchSearch = !this.specialTaskSearch || (item.taskTitle && item.taskTitle.toLowerCase().includes(this.specialTaskSearch.toLowerCase())) || (item.commandNo && item.commandNo.includes(this.specialTaskSearch));
+            return matchYear && matchSearch;
+          });
+        },
+
+        get filteredAwards() {
+          return this.awards.filter(item => {
+            const matchLevel = !this.awardLevelFilter || item.awardLevel === this.awardLevelFilter;
+            const matchSearch = !this.awardSearch || (item.awardTitle && item.awardTitle.toLowerCase().includes(this.awardSearch.toLowerCase())) || (item.awardingBody && item.awardingBody.toLowerCase().includes(this.awardSearch.toLowerCase()));
+            return matchLevel && matchSearch;
+          });
+        },
+
+        get filteredCertificates() {
+          return this.certificates.filter(item => {
+            const matchCat = !this.certCategoryFilter || item.certCategory === this.certCategoryFilter;
+            const matchSearch = !this.certSearch || (item.certTitle && item.certTitle.toLowerCase().includes(this.certSearch.toLowerCase())) || (item.issuer && item.issuer.toLowerCase().includes(this.certSearch.toLowerCase()));
+            return matchCat && matchSearch;
+          });
+        },
+
+        getAwardBadgeClass(level) {
+          if (level === 'ระดับนานาชาติ' || level === 'ระดับประเทศ') return 'badge-national';
+          if (level === 'ระดับภาค' || level === 'ระดับจังหวัด') return 'badge-regional';
+          if (level === 'ระดับเขตพื้นที่การศึกษา') return 'badge-gold';
+          return 'bg-blue-600 text-white';
+        },
+
+        handleModalFileSelect(e, targetObjName) {
+          const file = e.target.files[0];
+          if (!file) return;
+          if (file.size > 10 * 1024 * 1024) {
+            Swal.fire('ไฟล์ขนาดใหญ่เกินไป', 'กรุณาเลือกไฟล์ขนาดไม่เกิน 10MB', 'warning');
+            return;
+          }
+          this[targetObjName].fileName = file.name;
+          this[targetObjName].mimeType = file.type;
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            this[targetObjName].fileBase64 = evt.target.result;
+          };
+          reader.readAsDataURL(file);
+        },
+
+        openImagePreview(url, title) {
+          this.previewImageModal.url = url;
+          this.previewImageModal.title = title || 'พรีวิวเอกสาร/เกียรติบัตร';
+          this.previewImageModal.open = true;
+        },
+
+        openSpecialTaskModal(item) {
+          if (item) {
+            this.editSpecialTask = JSON.parse(JSON.stringify(item));
+          } else {
+            this.editSpecialTask = {
+              academicYear: this.settings.academicYears[0] || '2567',
+              status: 'กำลังดำเนินการ',
+              taskTitle: '',
+              rolePosition: '',
+              category: '',
+              commandNo: '',
+              description: '',
+              fileName: '',
+              mimeType: '',
+              fileBase64: ''
+            };
+          }
+          this.specialTaskModalOpen = true;
+        },
+
+        saveSpecialTaskModal() {
+          if (!this.editSpecialTask.taskTitle || !this.editSpecialTask.rolePosition) {
+            Swal.fire('ข้อผิดพลาด', 'กรุณากรอกชื่อโครงการและบทบาทหน้าที่', 'warning');
+            return;
+          }
+          Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+          if (this.isGasEnvironment) {
+            google.script.run
+              .withSuccessHandler((res) => {
+                if (res.success) {
+                  Swal.fire('สำเร็จ', res.message, 'success');
+                  this.specialTaskModalOpen = false;
+                  this.loadSystemData();
+                } else Swal.fire('เกิดข้อผิดพลาด', res.message, 'error');
+              })
+              .saveSpecialTask(this.editSpecialTask);
+          } else {
+            if (this.editSpecialTask.id) {
+              const idx = this.specialTasks.findIndex(t => t.id === this.editSpecialTask.id);
+              if (idx !== -1) this.specialTasks[idx] = { ...this.editSpecialTask };
+            } else {
+              const newObj = {
+                id: 'TASK-' + Math.floor(100 + Math.random() * 900),
+                timestamp: new Date().toISOString().slice(0,10),
+                email: this.activeEmail,
+                ...this.editSpecialTask,
+                fileUrl: this.editSpecialTask.fileBase64 || 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=800'
+              };
+              this.specialTasks.unshift(newObj);
+            }
+            localStorage.setItem('teacher_eportfolio_special_tasks', JSON.stringify(this.specialTasks));
+            this.specialTaskModalOpen = false;
+            Swal.fire('สำเร็จ!', 'บันทึกงานพิเศษ/โครงการเรียบร้อยแล้ว', 'success');
+          }
+        },
+
+        confirmDeleteSpecialTask(id) {
+          Swal.fire({
+            title: 'ยืนยันการลบงานพิเศษ?',
+            text: 'การลบนี้จะไม่สามารถย้อนคืนได้',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'ลบรายการ',
+            cancelButtonText: 'ยกเลิก'
+          }).then((res) => {
+            if (res.isConfirmed) {
+              if (this.isGasEnvironment) {
+                google.script.run.withSuccessHandler(() => this.loadSystemData()).deleteSpecialTask(id);
+              } else {
+                this.specialTasks = this.specialTasks.filter(t => t.id !== id);
+                localStorage.setItem('teacher_eportfolio_special_tasks', JSON.stringify(this.specialTasks));
+                Swal.fire('ลบสำเร็จ!', 'ลบงานพิเศษเรียบร้อยแล้ว', 'success');
+              }
+            }
+          });
+        },
+
+        openAwardModal(item) {
+          if (item) {
+            this.editAward = JSON.parse(JSON.stringify(item));
+          } else {
+            this.editAward = {
+              academicYear: this.settings.academicYears[0] || '2567',
+              awardLevel: 'ระดับโรงเรียน',
+              awardTitle: '',
+              awardingBody: '',
+              awardDate: new Date().toISOString().slice(0,10),
+              description: '',
+              fileName: '',
+              mimeType: '',
+              fileBase64: ''
+            };
+          }
+          this.awardModalOpen = true;
+        },
+
+        saveAwardModal() {
+          if (!this.editAward.awardTitle || !this.editAward.awardingBody) {
+            Swal.fire('ข้อผิดพลาด', 'กรุณากรอกชื่อรางวัลและหน่วยงานที่มอบ', 'warning');
+            return;
+          }
+          Swal.fire({ title: 'กำลังบันทึกรางวัล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+          if (this.isGasEnvironment) {
+            google.script.run
+              .withSuccessHandler((res) => {
+                if (res.success) {
+                  Swal.fire('สำเร็จ', res.message, 'success');
+                  this.awardModalOpen = false;
+                  this.loadSystemData();
+                } else Swal.fire('เกิดข้อผิดพลาด', res.message, 'error');
+              })
+              .saveAward(this.editAward);
+          } else {
+            if (this.editAward.id) {
+              const idx = this.awards.findIndex(a => a.id === this.editAward.id);
+              if (idx !== -1) this.awards[idx] = { ...this.editAward };
+            } else {
+              const newObj = {
+                id: 'AWD-' + Math.floor(100 + Math.random() * 900),
+                timestamp: new Date().toISOString().slice(0,10),
+                email: this.activeEmail,
+                ...this.editAward,
+                fileUrl: this.editAward.fileBase64 || 'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=800'
+              };
+              this.awards.unshift(newObj);
+            }
+            localStorage.setItem('teacher_eportfolio_awards', JSON.stringify(this.awards));
+            this.awardModalOpen = false;
+            Swal.fire('สำเร็จ!', 'บันทึกรางวัลผลงานเรียบร้อยแล้ว', 'success');
+          }
+        },
+
+        confirmDeleteAward(id) {
+          Swal.fire({
+            title: 'ยืนยันการลบรางวัล?',
+            text: 'การลบนี้จะไม่สามารถย้อนคืนได้',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'ลบรางวัล',
+            cancelButtonText: 'ยกเลิก'
+          }).then((res) => {
+            if (res.isConfirmed) {
+              if (this.isGasEnvironment) {
+                google.script.run.withSuccessHandler(() => this.loadSystemData()).deleteAward(id);
+              } else {
+                this.awards = this.awards.filter(a => a.id !== id);
+                localStorage.setItem('teacher_eportfolio_awards', JSON.stringify(this.awards));
+                Swal.fire('ลบสำเร็จ!', 'ลบรางวัลเรียบร้อยแล้ว', 'success');
+              }
+            }
+          });
+        },
+
+        openCertificateModal(item) {
+          if (item) {
+            this.editCertificate = JSON.parse(JSON.stringify(item));
+          } else {
+            this.editCertificate = {
+              academicYear: this.settings.academicYears[0] || '2567',
+              certCategory: 'การพัฒนาตนเอง / การอบรมทางวิชาการ',
+              certTitle: '',
+              issuer: '',
+              issueDate: new Date().toISOString().slice(0,10),
+              isHighlight: true,
+              fileName: '',
+              mimeType: '',
+              fileBase64: ''
+            };
+          }
+          this.certificateModalOpen = true;
+        },
+
+        saveCertificateModal() {
+          if (!this.editCertificate.certTitle || !this.editCertificate.issuer) {
+            Swal.fire('ข้อผิดพลาด', 'กรุณากรอกชื่อเกียรติบัตรและหน่วยงานที่ออก', 'warning');
+            return;
+          }
+          Swal.fire({ title: 'กำลังบันทึกเกียรติบัตร...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+          if (this.isGasEnvironment) {
+            google.script.run
+              .withSuccessHandler((res) => {
+                if (res.success) {
+                  Swal.fire('สำเร็จ', res.message, 'success');
+                  this.certificateModalOpen = false;
+                  this.loadSystemData();
+                } else Swal.fire('เกิดข้อผิดพลาด', res.message, 'error');
+              })
+              .saveCertificate(this.editCertificate);
+          } else {
+            if (this.editCertificate.id) {
+              const idx = this.certificates.findIndex(c => c.id === this.editCertificate.id);
+              if (idx !== -1) this.certificates[idx] = { ...this.editCertificate };
+            } else {
+              const newObj = {
+                id: 'CRT-' + Math.floor(100 + Math.random() * 900),
+                timestamp: new Date().toISOString().slice(0,10),
+                email: this.activeEmail,
+                ...this.editCertificate,
+                fileUrl: this.editCertificate.fileBase64 || 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?auto=format&fit=crop&q=80&w=800'
+              };
+              this.certificates.unshift(newObj);
+            }
+            localStorage.setItem('teacher_eportfolio_certificates', JSON.stringify(this.certificates));
+            this.certificateModalOpen = false;
+            Swal.fire('สำเร็จ!', 'บันทึกเกียรติบัตรเรียบร้อยแล้ว', 'success');
+          }
+        },
+
+        confirmDeleteCertificate(id) {
+          Swal.fire({
+            title: 'ยืนยันการลบเกียรติบัตร?',
+            text: 'การลบนี้จะไม่สามารถย้อนคืนได้',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'ลบเกียรติบัตร',
+            cancelButtonText: 'ยกเลิก'
+          }).then((res) => {
+            if (res.isConfirmed) {
+              if (this.isGasEnvironment) {
+                google.script.run.withSuccessHandler(() => this.loadSystemData()).deleteCertificate(id);
+              } else {
+                this.certificates = this.certificates.filter(c => c.id !== id);
+                localStorage.setItem('teacher_eportfolio_certificates', JSON.stringify(this.certificates));
+                Swal.fire('ลบสำเร็จ!', 'ลบเกียรติบัตรเรียบร้อยแล้ว', 'success');
+              }
+            }
+          });
+        },
+
+        toggleCertHighlight(cert) {
+          cert.isHighlight = !cert.isHighlight;
+          if (this.isGasEnvironment) {
+            google.script.run.toggleCertHighlight(cert.id, cert.isHighlight);
+          } else {
+            localStorage.setItem('teacher_eportfolio_certificates', JSON.stringify(this.certificates));
+          }
+          const toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1800 });
+          toast.fire({ icon: 'success', title: cert.isHighlight ? 'เพิ่มเกียรติบัตรเข้า Showcase แล้ว' : 'นำเกียรติบัตรออกจาก Showcase แล้ว' });
+        },
+
+        switchViewMode(mode) {
+          this.viewMode = mode;
+          if (mode === 'public' && (this.activeTab === 'upload' || this.activeTab === 'myrecords' || this.activeTab === 'admin-master' || this.activeTab === 'admin-settings')) {
+            this.activeTab = 'showcase';
+          }
+          const toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1800 });
+          toast.fire({
+            icon: mode === 'public' ? 'info' : 'success',
+            title: mode === 'public' ? 'สลับเข้าสู่โหมดบุคคลทั่วไป (Public View)' : 'สลับเข้าสู่โหมดครู/ผู้ดูแลระบบ (Owner View)'
+          });
+        },
+
+        toggleViewMode() {
+          this.switchViewMode(this.viewMode === 'public' ? 'owner' : 'public');
+        },
+
+        startCarousel() {
+          setInterval(() => {
+            this.nextSlide();
+          }, 5000);
+        },
+
+        nextSlide() {
+          this.currentSlide = (this.currentSlide + 1) % this.carouselSlides.length;
+        },
+
+        prevSlide() {
+          this.currentSlide = (this.currentSlide - 1 + this.carouselSlides.length) % this.carouselSlides.length;
+        },
+
+        get totalTeachingHours() {
+          return this.timetableSlots.length;
+        },
+
+        getSlot(dayId, periodNum) {
+          return this.timetableSlots.find(s => s.day === dayId && s.period === periodNum);
+        },
+
+        getSlotBg(type) {
+          if (type === 'basic') return 'bg-blue-100 border-l-4 border-blue-600 text-blue-900';
+          if (type === 'additional') return 'bg-emerald-100 border-l-4 border-emerald-600 text-emerald-900';
+          if (type === 'activity') return 'bg-amber-100 border-l-4 border-amber-600 text-amber-900';
+          if (type === 'club') return 'bg-violet-100 border-l-4 border-violet-600 text-violet-900';
+          return 'bg-slate-100 border-l-4 border-slate-400 text-slate-800';
+        },
+
+        openTimetableModal() {
+          this.editSlot = { day: 'mon', period: 1, subject: '', code: '', room: '', building: '', type: 'basic' };
+          this.timetableModalOpen = true;
+        },
+
+        saveTimetableSlot() {
+          const existingIdx = this.timetableSlots.findIndex(s => s.day === this.editSlot.day && s.period === Number(this.editSlot.period));
+          const newObj = {
+            day: this.editSlot.day,
+            period: Number(this.editSlot.period),
+            subject: this.editSlot.subject,
+            code: this.editSlot.code,
+            room: this.editSlot.room,
+            building: this.editSlot.building,
+            type: this.editSlot.type
+          };
+
+          if (existingIdx !== -1) {
+            this.timetableSlots[existingIdx] = newObj;
+          } else {
+            this.timetableSlots.push(newObj);
+          }
+
+          localStorage.setItem('teacher_eportfolio_timetable', JSON.stringify(this.timetableSlots));
+          this.timetableModalOpen = false;
+          Swal.fire('บันทึกสำเร็จ!', 'อัปเดตตารางสอนเรียบร้อยแล้ว', 'success');
+        },
+
+        deleteTimetableSlot() {
+          this.timetableSlots = this.timetableSlots.filter(s => !(s.day === this.editSlot.day && s.period === Number(this.editSlot.period)));
+          localStorage.setItem('teacher_eportfolio_timetable', JSON.stringify(this.timetableSlots));
+          this.timetableModalOpen = false;
+          Swal.fire('ลบสำเร็จ!', 'ลบคาบเรียนดังกล่าวเรียบร้อยแล้ว', 'success');
+        },
+
+        loadSystemData() {
+          this.loading = true;
+
+          if (this.isGasEnvironment) {
+            google.script.run
+              .withSuccessHandler((res) => {
+                this.activeEmail = res.activeEmail;
+                this.isAdmin = res.isAdmin;
+                this.profile = res.profile;
+                this.stats = res.stats;
+                this.settings = res.settings;
+                this.showcaseItems = res.showcaseItems;
+                this.mySubmissions = res.mySubmissions;
+                this.allSubmissions = res.allSubmissions;
+                this.specialTasks = res.specialTasks || [];
+                this.awards = res.awards || [];
+                this.certificates = res.certificates || [];
+                this.finalizeInit();
+              })
+              .withFailureHandler((err) => {
+                this.loading = false;
+                Swal.fire('ข้อผิดพลาด', err.toString(), 'error');
+              })
+              .getUserData();
+          } else {
+            const savedProfile = localStorage.getItem('teacher_eportfolio_profile');
+            if (savedProfile) this.profile = JSON.parse(savedProfile);
+
+            const savedSettings = localStorage.getItem('teacher_eportfolio_settings');
+            if (savedSettings) {
+              try {
+                this.settings = { ...this.settings, ...JSON.parse(savedSettings) };
+              } catch (e) {
+                console.error(e);
+              }
+            }
+
+            const savedTimetable = localStorage.getItem('teacher_eportfolio_timetable');
+            if (savedTimetable) this.timetableSlots = JSON.parse(savedTimetable);
+
+            const savedSpecialTasks = localStorage.getItem('teacher_eportfolio_special_tasks');
+            if (savedSpecialTasks) {
+              this.specialTasks = JSON.parse(savedSpecialTasks);
+            } else {
+              this.specialTasks = [];
+            }
+
+            const savedAwards = localStorage.getItem('teacher_eportfolio_awards');
+            if (savedAwards) {
+              this.awards = JSON.parse(savedAwards);
+            } else {
+              this.awards = [];
+            }
+
+            const savedCertificates = localStorage.getItem('teacher_eportfolio_certificates');
+            if (savedCertificates) {
+              this.certificates = JSON.parse(savedCertificates);
+            } else {
+              this.certificates = [];
+            }
+
+            const savedSubmissions = localStorage.getItem('teacher_eportfolio_submissions');
+            if (savedSubmissions) {
+              this.mySubmissions = JSON.parse(savedSubmissions);
+            } else {
+              this.mySubmissions = [];
+            }
+
+            this.allSubmissions = [...this.mySubmissions];
+            this.updateStatsAndShowcase();
+            this.finalizeInit();
+          }
+        },
+
+        updateStatsAndShowcase() {
+          this.showcaseItems = this.mySubmissions.filter(item => item.isHighlight);
+          this.stats.totalSubmissions = this.mySubmissions.length;
+          this.stats.totalCertificates = this.mySubmissions.filter(item => item.documentName.includes('เกียรติบัตร') || item.documentName.includes('วุฒิบัตร')).length;
+          this.stats.cat1Count = this.mySubmissions.filter(item => item.workCategory.includes('ด้านที่ 1')).length;
+          this.stats.cat2Count = this.mySubmissions.filter(item => item.workCategory.includes('ด้านที่ 2')).length;
+          this.stats.cat3Count = this.mySubmissions.filter(item => item.workCategory.includes('ด้านที่ 3')).length;
+          this.stats.catOtherCount = this.mySubmissions.filter(item => !item.workCategory.includes('ด้านที่')).length;
+        },
+
+        finalizeInit() {
+          this.loading = false;
+          this.$nextTick(() => {
+            this.renderChart();
+            this.initMyRecordsTable();
+          });
+        },
+
+        setTab(tabName) {
+          this.activeTab = tabName;
+          this.sidebarOpen = false;
+          this.$nextTick(() => {
+            if (tabName === 'myrecords') this.initMyRecordsTable();
+            else if (tabName === 'admin-master' && this.isAdmin) this.initMasterDataTable();
+            else if (tabName === 'showcase') this.renderChart();
+          });
+        },
+
+        renderChart() {
+          const canvas = document.getElementById('workDistributionChart');
+          if (!canvas) return;
+          if (this.chartInstance) this.chartInstance.destroy();
+
+          const ctx = canvas.getContext('2d');
+          this.chartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: [
+                'ด้านที่ 1: การจัดการเรียนรู้',
+                'ด้านที่ 2: การส่งเสริมและสนับสนุน',
+                'ด้านที่ 3: การพัฒนาตนเองและวิชาชีพ',
+                'ทั่วไป / เอกสารอื่นๆ'
+              ],
+              datasets: [{
+                data: [
+                  this.stats.cat1Count || 0,
+                  this.stats.cat2Count || 0,
+                  this.stats.cat3Count || 0,
+                  this.stats.catOtherCount || 0
+                ],
+                backgroundColor: ['#2563eb', '#0284c7', '#0d9488', '#64748b'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { position: 'bottom', labels: { font: { family: 'Sarabun', size: 13 }, padding: 15 } }
+              }
+            }
+          });
+        },
+
+        initMyRecordsTable() {
+          if ($.fn.DataTable.isDataTable('#myRecordsTable')) {
+            $('#myRecordsTable').DataTable().destroy();
+          }
+          this.$nextTick(() => {
+            this.myDataTable = $('#myRecordsTable').DataTable({
+              language: {
+                search: "ค้นหาเอกสาร:",
+                lengthMenu: "แสดง _MENU_ รายการ",
+                info: "แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ",
+                paginate: { first: "หน้าแรก", previous: "ก่อนหน้า", next: "ถัดไป", last: "หน้าสุดท้าย" },
+                emptyTable: "ยังไม่มีประวัติการส่งเอกสาร"
+              },
+              pageLength: 10,
+              order: [[0, 'desc']]
+            });
+          });
+        },
+
+        initMasterDataTable() {
+          if ($.fn.DataTable.isDataTable('#masterDataTable')) {
+            $('#masterDataTable').DataTable().destroy();
+          }
+          this.$nextTick(() => {
+            this.masterDataTable = $('#masterDataTable').DataTable({
+              language: {
+                search: "ค้นหาข้อมูลครู/เอกสาร:",
+                lengthMenu: "แสดง _MENU_ รายการ",
+                info: "แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ",
+                paginate: { first: "หน้าแรก", previous: "ก่อนหน้า", next: "ถัดไป", last: "หน้าสุดท้าย" },
+                emptyTable: "ยังไม่มีข้อมูลในระบบ"
+              },
+              pageLength: 10,
+              order: [[0, 'desc']]
+            });
+          });
+        },
+
+        handleFileDrop(e) {
+          this.isDragging = false;
+          const files = e.dataTransfer.files;
+          if (files.length > 0) this.processSelectedFile(files[0]);
+        },
+
+        handleFileSelect(e) {
+          const files = e.target.files;
+          if (files.length > 0) this.processSelectedFile(files[0]);
+        },
+
+        processSelectedFile(file) {
+          if (file.size > 10 * 1024 * 1024) {
+            Swal.fire('ขนาดใหญ่เกินไป', 'กรุณาเลือกไฟล์ขนาดไม่เกิน 10MB', 'warning');
+            return;
+          }
+          this.uploadForm.fileName = file.name;
+          this.uploadForm.mimeType = file.type;
+          if (!this.uploadForm.documentName) {
+            this.uploadForm.documentName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+          }
+          const reader = new FileReader();
+          reader.onload = (e) => { this.uploadForm.fileBase64 = e.target.result; };
+          reader.readAsDataURL(file);
+        },
+
+        removeSelectedFile() {
+          this.uploadForm.fileName = '';
+          this.uploadForm.mimeType = '';
+          this.uploadForm.fileBase64 = '';
+          const input = document.getElementById('fileInput');
+          if (input) input.value = '';
+        },
+
+        submitForm() {
+          if (!this.uploadForm.fileBase64 && !this.uploadForm.fileName) {
+            Swal.fire('ข้อผิดพลาด', 'กรุณาเลือกไฟล์เอกสาร', 'warning');
+            return;
+          }
+          if (!this.uploadForm.documentName) {
+            Swal.fire('ข้อผิดพลาด', 'กรุณากรอกชื่อเอกสาร', 'warning');
+            return;
+          }
+
+          this.uploading = true;
+          Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+          if (this.isGasEnvironment) {
+            google.script.run
+              .withSuccessHandler((res) => {
+                this.uploading = false;
+                if (res.success) {
+                  Swal.fire('สำเร็จ!', res.message, 'success');
+                  this.removeSelectedFile();
+                  this.uploadForm.documentName = '';
+                  this.loadSystemData();
+                  this.setTab('myrecords');
+                } else Swal.fire('เกิดข้อผิดพลาด', res.message, 'error');
+              })
+              .processFormSubmit(this.uploadForm);
+          } else {
+            setTimeout(() => {
+              const now = new Date();
+              const formattedDate = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+              
+              const newSubmission = {
+                id: 'SUB-' + Math.floor(100 + Math.random() * 900),
+                timestamp: formattedDate,
+                uploaderEmail: this.activeEmail,
+                academicYear: this.uploadForm.academicYear,
+                teacherName: this.uploadForm.teacherName,
+                workCategory: this.uploadForm.workCategory,
+                documentName: this.uploadForm.documentName,
+                fileUrl: this.uploadForm.fileBase64 || 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=800',
+                fileType: this.uploadForm.mimeType || 'application/pdf',
+                isHighlight: this.uploadForm.isHighlight
+              };
+
+              this.mySubmissions.unshift(newSubmission);
+              this.allSubmissions.unshift(newSubmission);
+              localStorage.setItem('teacher_eportfolio_submissions', JSON.stringify(this.mySubmissions));
+              this.updateStatsAndShowcase();
+
+              this.uploading = false;
+              Swal.fire('อัปโหลดสำเร็จ!', 'บันทึกข้อมูลเข้าสู่ระบบในเครื่องสำเร็จเรียบร้อย', 'success');
+              this.removeSelectedFile();
+              this.uploadForm.documentName = '';
+              this.setTab('myrecords');
+            }, 800);
+          }
+        },
+
+        openProfileModal() {
+          this.editProfile = JSON.parse(JSON.stringify(this.profile));
+          this.profileModalOpen = true;
+        },
+
+        saveProfileModal() {
+          if (this.isGasEnvironment) {
+            Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            google.script.run
+              .withSuccessHandler((res) => {
+                if (res.success) {
+                  this.profile = JSON.parse(JSON.stringify(this.editProfile));
+                  this.profileModalOpen = false;
+                  Swal.fire('สำเร็จ', res.message, 'success');
+                } else Swal.fire('ข้อผิดพลาด', res.message, 'error');
+              })
+              .saveProfile(this.editProfile);
+          } else {
+            this.profile = JSON.parse(JSON.stringify(this.editProfile));
+            localStorage.setItem('teacher_eportfolio_profile', JSON.stringify(this.profile));
+            this.profileModalOpen = false;
+            Swal.fire('สำเร็จ!', 'บันทึกข้อมูลโปรไฟล์ลงในเครื่องเรียบร้อยแล้ว', 'success');
+          }
+        },
+
+        toggleHighlightStatus(item) {
+          item.isHighlight = !item.isHighlight;
+          if (this.isGasEnvironment) {
+            google.script.run.toggleHighlight(item.id, item.isHighlight);
+          } else {
+            localStorage.setItem('teacher_eportfolio_submissions', JSON.stringify(this.mySubmissions));
+            this.updateStatsAndShowcase();
+          }
+          const toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1800 });
+          toast.fire({ icon: 'success', title: item.isHighlight ? 'เพิ่มเข้า Showcase หน้าแรกแล้ว' : 'เอาออกจาก Showcase แล้ว' });
+        },
+
+        confirmDeleteSubmission(id) {
+          Swal.fire({
+            title: 'ยืนยันการลบรายการ?',
+            text: 'การลบนี้จะไม่สามารถย้อนคืนได้',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'ลบรายการ',
+            cancelButtonText: 'ยกเลิก'
+          }).then((result) => {
+            if (result.isConfirmed) {
+              if (this.isGasEnvironment) {
+                google.script.run.withSuccessHandler(() => this.loadSystemData()).deleteSubmission(id);
+              } else {
+                this.mySubmissions = this.mySubmissions.filter(i => i.id !== id);
+                this.allSubmissions = this.allSubmissions.filter(i => i.id !== id);
+                localStorage.setItem('teacher_eportfolio_submissions', JSON.stringify(this.mySubmissions));
+                this.updateStatsAndShowcase();
+                Swal.fire('ลบสำเร็จ!', 'ลบรายการเรียบร้อยแล้ว', 'success');
+                this.initMasterDataTable();
+              }
+            }
+          });
+        },
+
+        addItem(listName, inputProp) {
+          const val = this[inputProp].trim();
+          if (val && !this.settings[listName].includes(val)) {
+            this.settings[listName].push(val);
+            this[inputProp] = '';
+          }
+        },
+
+        removeItem(listName, index) {
+          this.settings[listName].splice(index, 1);
+        },
+
+        saveSystemSettings() {
+          if (this.isGasEnvironment) {
+            google.script.run.withSuccessHandler(res => Swal.fire('สำเร็จ', res.message, 'success')).saveSettings(this.settings);
+          } else {
+            localStorage.setItem('teacher_eportfolio_settings', JSON.stringify(this.settings));
+            Swal.fire('สำเร็จ!', 'บันทึกการตั้งค่าระบบเรียบร้อยแล้ว', 'success');
+          }
+        },
+
+        // PIN KEYPAD & ADMIN UNLOCK METHODS
+        requestAdminAccess(tabOrAction) {
+          if (this.isAdminUnlocked) {
+            if (typeof tabOrAction === 'function') {
+              tabOrAction();
+            } else if (typeof tabOrAction === 'string') {
+              this.setTab(tabOrAction);
+            }
+            return;
+          }
+          this.pendingAdminAction = tabOrAction;
+          this.openPinModal();
+        },
+
+        openPinModal() {
+          this.enteredPin = '';
+          this.pinError = false;
+          this.pinShake = false;
+          this.pinErrorMessage = '';
+          this.pinModalOpen = true;
+        },
+
+        closePinModal() {
+          this.pinModalOpen = false;
+          this.enteredPin = '';
+          this.pinError = false;
+          this.pendingAdminAction = null;
+        },
+
+        testKeypadModal() {
+          this.pendingAdminAction = null;
+          this.openPinModal();
+        },
+
+        pressPinDigit(digit) {
+          if (this.enteredPin.length < 6) {
+            this.enteredPin += digit.toString();
+            this.pinError = false;
+            if (this.enteredPin.length === (this.settings.adminPin ? this.settings.adminPin.length : 4)) {
+              setTimeout(() => this.verifyEnteredPin(), 120);
+            }
+          }
+        },
+
+        backspacePin() {
+          if (this.enteredPin.length > 0) {
+            this.enteredPin = this.enteredPin.slice(0, -1);
+            this.pinError = false;
+          }
+        },
+
+        clearPin() {
+          this.enteredPin = '';
+          this.pinError = false;
+        },
+
+        verifyEnteredPin() {
+          const expectedPin = (this.settings && this.settings.adminPin) ? String(this.settings.adminPin).trim() : '1234';
+          if (this.enteredPin === expectedPin) {
+            this.isAdminUnlocked = true;
+            this.pinModalOpen = false;
+            this.pinError = false;
+            const toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+            toast.fire({ icon: 'success', title: 'ปลดล็อคสิทธิ์ Admin เรียบร้อยแล้ว' });
+
+            if (this.pendingAdminAction) {
+              const act = this.pendingAdminAction;
+              this.pendingAdminAction = null;
+              if (typeof act === 'function') {
+                act();
+              } else if (typeof act === 'string') {
+                this.setTab(act);
+              }
+            }
+          } else {
+            this.pinError = true;
+            this.pinShake = true;
+            this.pinErrorMessage = 'รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง';
+            setTimeout(() => { this.pinShake = false; }, 600);
+            setTimeout(() => { this.enteredPin = ''; }, 400);
+          }
+        },
+
+        lockAdmin() {
+          this.isAdminUnlocked = false;
+          if (this.activeTab === 'admin-master' || this.activeTab === 'admin-settings') {
+            this.activeTab = 'showcase';
+          }
+          const toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1800 });
+          toast.fire({ icon: 'info', title: 'ล็อคระบบ Admin เรียบร้อยแล้ว' });
+        },
+
+        // GOOGLE DRIVE FOLDER TEST METHOD
+        testDriveFolder(folderUrlOrId, label) {
+          if (!folderUrlOrId || !folderUrlOrId.trim()) {
+            Swal.fire('ยังไม่ได้กำหนดโฟลเดอร์', `กรุณากรอกลิงก์ Google Drive หรือ Folder ID สำหรับ ${label}`, 'info');
+            return;
+          }
+          Swal.fire({ title: 'กำลังตรวจสอบการเข้าถึงโฟลเดอร์...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+          if (this.isGasEnvironment) {
+            google.script.run
+              .withSuccessHandler(res => {
+                if (res.success) {
+                  Swal.fire({
+                    icon: 'success',
+                    title: 'เชื่อมต่อสำเร็จ!',
+                    html: `<p class="text-sm font-semibold">${res.message}</p><p class="text-xs text-slate-500 mt-2 font-mono">ID: ${res.folderId}</p>`,
+                    confirmButtonText: 'ตกลง'
+                  });
+                } else {
+                  Swal.fire('การเชื่อมต่อไม่สำเร็จ', res.message, 'error');
+                }
+              })
+              .withFailureHandler(err => Swal.fire('ข้อผิดพลาด', err.toString(), 'error'))
+              .testDriveFolder(folderUrlOrId);
+          } else {
+            Swal.fire({
+              icon: 'success',
+              title: 'ตรวจสอบลิงก์ (Local Mode)',
+              html: `<p class="text-xs text-slate-600">ที่อยู่ที่ระบุ: <code class="bg-slate-100 p-1 rounded text-blue-600">${folderUrlOrId}</code></p><p class="text-xs text-slate-500 mt-2">เมื่อรันบน Google Apps Script ระบบจะค้นหาและเชื่อมต่อไปยัง Google Drive จริงโดยอัตโนมัติ</p>`,
+              confirmButtonText: 'รับทราบ'
+            });
+          }
+        },
+
+        // UNIVERSAL BOT NOTIFICATION TEST METHOD
+        testNotificationEngine() {
+          const platform = this.settings.notifyPlatform || 'telegram';
+          const botToken = (this.settings.botToken || '').trim();
+          const groupId = (this.settings.groupId || '').trim();
+          const lineToken = (this.settings.lineToken || '').trim();
+
+          if (platform === 'line_notify' && !lineToken) {
+            Swal.fire('กรุณากรอกข้อมูล', 'กรุณาระบุ LINE Notify Access Token', 'warning');
+            return;
+          }
+          if ((platform === 'telegram' || platform === 'line_bot') && (!botToken || !groupId)) {
+            Swal.fire('กรุณากรอกข้อมูลให้ครบ', `กรุณาระบุทั้ง ${platform === 'telegram' ? 'Telegram Bot Token' : 'LINE Channel Access Token'} และ Group ID / Chat ID`, 'warning');
+            return;
+          }
+
+          Swal.fire({ title: 'กำลังส่งข้อความทดสอบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+          if (this.isGasEnvironment) {
+            google.script.run
+              .withSuccessHandler(res => {
+                if (res.success) {
+                  Swal.fire({
+                    icon: 'success',
+                    title: 'ส่งแจ้งเตือนสำเร็จ!',
+                    text: res.message,
+                    confirmButtonText: 'เยี่ยมมาก'
+                  });
+                } else {
+                  Swal.fire({
+                    icon: 'error',
+                    title: 'ส่งไม่สำเร็จ',
+                    html: `<p class="text-sm font-semibold">${res.message}</p><p class="text-xs text-slate-500 mt-2 font-mono">Response Code: ${res.code || 'N/A'}</p>`,
+                    confirmButtonText: 'ตรวจสอบการตั้งค่า'
+                  });
+                }
+              })
+              .withFailureHandler(err => Swal.fire('ข้อผิดพลาด', err.toString(), 'error'))
+              .testNotification({
+                platform: platform,
+                botToken: botToken,
+                groupId: groupId,
+                lineToken: lineToken
+              });
+          } else {
+            setTimeout(() => {
+              Swal.fire({
+                icon: 'success',
+                title: 'ทดสอบส่งการแจ้งเตือน (Local Mode)',
+                html: `<div class="text-left text-xs space-y-1.5 p-3 bg-slate-50 rounded-xl border border-slate-200 font-mono">
+                  <div><b>Platform:</b> ${platform.toUpperCase()}</div>
+                  <div><b>Bot Token:</b> ${botToken ? botToken.slice(0, 10) + '...' : 'N/A'}</div>
+                  <div><b>Group/Chat ID:</b> ${groupId || lineToken}</div>
+                </div>
+                <p class="text-xs text-emerald-600 mt-3 font-semibold"><i class="fa-solid fa-circle-check"></i> ข้อมูลการตั้งค่าถูกต้อง พร้อมส่งงานจริงบน Google Apps Script</p>`,
+                confirmButtonText: 'ตกลง'
+              });
+            }, 600);
+          }
+        },
+
+        getSubmissionsByCategory(categoryKeyword) {
+          return this.mySubmissions.filter(item => item.workCategory && item.workCategory.includes(categoryKeyword));
+        }
+      }));
+    });
+  </script>
+</body>
+</html>
